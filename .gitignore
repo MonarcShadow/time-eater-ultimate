@@ -1,3 +1,13 @@
 *.ps1
 juego_descomprimido/*
 last_mod_version.txt
+SG_Time_Eater_Ultimate/work/*
+archives_to_extract.txt
+extract_game_archives.ps1
+disk/*
+create_append_ar.ps1
+append_archives_to_create.txt
+work/
+temp_ar_content_for_append/
+temp_append_content_for_ar/ # Si usaste el nombre anterior
+*_append_pack_temp/
