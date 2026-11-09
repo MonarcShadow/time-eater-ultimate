@@ -40,8 +40,8 @@ if (-not (Test-Path (Join-Path $modDir "mod.ini"))) { throw "No existe mod\mod.i
 if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw "La versión debe ser X.Y.Z (ej. 0.1.1)" }
 
 if (-not $SoloPreparar) {
-    gh release view $tag -R $Repo *> $null
-    if ($LASTEXITCODE -eq 0) { throw "La release $tag ya existe en GitHub." }
+    $tags = gh release list -R $Repo --limit 200 --json tagName --jq ".[].tagName"
+    if ($tags -contains $tag) { throw "La release $tag ya existe en GitHub." }
 }
 
 if (-not $SoloPreparar -and -not $Forzar) {
@@ -93,8 +93,8 @@ foreach ($f in $archivos) {
 $borrados = New-Object System.Collections.ArrayList
 try {
     $prev = Join-Path $buildDir "prev_manifest.json"
-    gh release download -R $Repo --pattern "update_manifest.json" --output $prev 2>$null
-    if ($LASTEXITCODE -eq 0 -and (Test-Path $prev)) {
+    if ($tags) { gh release download -R $Repo --pattern "update_manifest.json" --output $prev }
+    if (Test-Path $prev) {
         $pm = Get-Content $prev -Raw | ConvertFrom-Json
         foreach ($pf in $pm.files) {
             if ($pf.size -ge 0 -and -not ($entradas | Where-Object { $_.Path -ieq $pf.path })) { [void]$borrados.Add($pf.path) }
