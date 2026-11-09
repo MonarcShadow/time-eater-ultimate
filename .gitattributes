@@ -1,0 +1,7 @@
+# Archivos del juego: siempre binarios, sin conversión de saltos de línea
+*.ar.* binary
+*.arl binary
+*.pfd binary
+*.pfi binary
+*.dds binary
+*.cpk binary

@@ -145,6 +145,7 @@ if ($SoloPreparar) { return }
 # --- 4. Publicar la rama hmm-update (huérfana, se sobrescribe) ----------------
 Push-Location $updDir
 git init --quiet
+git config core.autocrlf false   # nunca convertir saltos de línea (hay archivos binarios .ar/.pfd)
 git checkout --quiet --orphan $RamaUpdate
 git add -A
 git -c user.name="$(git -C $raiz config user.name)" -c user.email="$(git -C $raiz config user.email)" commit --quiet -m "Contenido de actualización HMM $Version"
