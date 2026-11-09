@@ -5,3 +5,4 @@
 *.pfi binary
 *.dds binary
 *.cpk binary
+*.bat text eol=crlf
