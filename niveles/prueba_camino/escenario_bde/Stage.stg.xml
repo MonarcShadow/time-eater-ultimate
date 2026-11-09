@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!-- Nivel de prueba "solo un camino" (Time Eater Ultimate) en el slot del Death Egg Robot (bde, Sonic clásico) -->
+<Stage>
+  <Sonic>
+    <Position>
+      <x>0</x>
+      <y>0.1</y>
+      <z>0</z>
+    </Position>
+    <Yaw>90</Yaw>
+    <Start>
+      <Mode>None</Mode>
+      <Speed>0</Speed>
+      <Time>0</Time>
+    </Start>
+    <DeadHeight>-30</DeadHeight>
+    <CameraView>Side</CameraView>
+  </Sonic>
+  <View>
+    <Near>0.1</Near>
+    <Far>10000</Far>
+  </View>
+  <BGM>
+    <IsStream>true</IsStream>
+    <Container>SNG14_BDE</Container>
+    <Name>Boss_Death_Egg</Name>
+  </BGM>
+  <Path>
+    <Container>bde</Container>
+    <Path2D>
+      <Name>teu_camino</Name>
+      <IsTerrain>false</IsTerrain>
+      <IsRender>false</IsRender>
+    </Path2D>
+  </Path>
+</Stage>
