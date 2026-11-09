@@ -1,0 +1,17 @@
+schema_version = "1.0.0"
+
+id = "time_eater_tools"
+version = "0.1.0"
+name = "Time Eater Tools"
+tagline = "Utilidades para crear niveles de Sonic Generations 2011"
+maintainer = "MonarcShadow"
+type = "add-on"
+website = "https://github.com/MonarcShadow/time-eater-ultimate"
+tags = ["Import-Export", "Scene"]
+
+blender_version_min = "4.2.0"
+
+license = ["SPDX:GPL-3.0-or-later"]
+
+[permissions]
+files = "Exportar FBX para Hedgehog/Havok Converter y path.xml de splines"

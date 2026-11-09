@@ -19,6 +19,15 @@ Mod para **Sonic Generations (2011, Steam)**: un nivel nuevo y un White Space re
 | `legacy/` | Primer intento (cambio de textura de prueba, 2025) | Sí, salvo `legacy/disk` |
 | `build/` | Salida de las releases | No |
 
+## Preparar el entorno (una vez)
+
+```powershell
+.\scripts\descargar_herramientas.ps1   # toolchain en herramientas\ (reintenta; salta lo que ya está al día)
+.\scripts\configurar_blender.ps1       # Blender de Steam con config aislada en herramientas\blender-config
+```
+
+Luego abre Blender siempre con `scripts\abrir_blender.bat`: carga HEIO y el addon **Time Eater Tools** (panel N > Time Eater), y no toca la configuración global de Blender (`%APPDATA%`).
+
 ## Publicar una versión
 
 ```powershell
