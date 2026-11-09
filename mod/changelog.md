@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.2
+- Las actualizaciones ahora se sirven desde la rama `hmm-update` (compatible con Hedge Mod Manager 7.15 y 8).
+
 ## 0.1.1
 - Versión de prueba para verificar las actualizaciones desde Hedge Mod Manager.
 
