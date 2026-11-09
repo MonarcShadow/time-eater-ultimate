@@ -15,3 +15,6 @@ legacy/SG_Time_Eater_Ultimate/work/
 
 # Descargas de aria2 (scripts/descargar.ps1); se mueven a su sitio al terminar
 descargas/
+
+# Configuración local de Claude Code
+.claude/settings.local.json
