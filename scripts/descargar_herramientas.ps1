@@ -2,11 +2,12 @@
 # Descarga la toolchain de modding de Sonic Generations (2011) desde sus repos oficiales en GitHub.
 # Documentación: bóveda Obsidian "D:\bobedas\mod sonic generation" -> wiki/herramientas/toolchain-sonic-generations.md
 #
-# Uso:  powershell -ExecutionPolicy Bypass -File .\scripts\descargar_herramientas.ps1 [-Destino <carpeta>] [-SinBlender]
+# Uso:  powershell -ExecutionPolicy Bypass -File .\scripts\descargar_herramientas.ps1 [-Destino <carpeta>] [-ConBlenderPortable]
+# Blender se usa desde Steam; -ConBlenderPortable descarga además una copia portable 4.5 LTS.
 
 param(
     [string]$Destino = (Join-Path (Split-Path $PSScriptRoot -Parent) "herramientas"),
-    [switch]$SinBlender
+    [switch]$ConBlenderPortable
 )
 
 $ErrorActionPreference = "Stop"
@@ -85,7 +86,7 @@ try {
 } catch { Write-Warning "[HavokConverter ini] No se pudo descargar el gist: $($_.Exception.Message)" }
 
 # 8. Blender portable (4.5 LTS; HEIO requiere 4.2+). Se descomprime en herramientas\Blender
-if (-not $SinBlender) {
+if ($ConBlenderPortable) {
     $blenderVer = "4.5.15"
     $blenderZip = Join-Path $Destino "blender-$blenderVer-windows-x64.zip"
     $blenderDir = Join-Path $Destino "Blender"
