@@ -1,0 +1,2 @@
+# nombre del archivo apend sin el +         ruta a mover los .ar                carpeta interna del .ar             ruta en la carpeta work del archivo
+Sonic|/bb3/|sonic|sonic\chr_sonic_body01_dif_HD.dds
