@@ -14,6 +14,7 @@ Mod para **Sonic Generations (2011, Steam)**: un nivel nuevo y un White Space re
 |---|---|---|
 | `mod/` | El mod tal como lo carga HMM (`mod.ini`, `disk/...`) | Sí |
 | `scripts/` | Preparar entorno, descargas, Blender y publicación de releases | Sí |
+| `tutoriales-guias/` | Una guía por herramienta (empieza por `00-indice.md`) | Sí |
 | `herramientas/` | Toolchain descargada (SonicGLvl, Hedgehog/Havok Converter, HedgeArcPack, PackCpk, Blender…) | No |
 | `archivos originales/` | Datos extraídos del juego (`bb`, `bb2`, `bb3`) | No (copyright de SEGA) |
 | `legacy/` | Primer intento (cambio de textura de prueba, 2025) | Sí, salvo `legacy/disk` |
