@@ -12,3 +12,6 @@ build/
 *_pack_temp/
 *.log
 legacy/SG_Time_Eater_Ultimate/work/
+
+# Descargas de aria2 (scripts/descargar.ps1); se mueven a su sitio al terminar
+descargas/

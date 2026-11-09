@@ -117,6 +117,8 @@ Save-ReleaseAssets "KwasTools" "ThisKwasior/KwasTools" $null '\.zip$'
 Save-ReleaseAssets "fcoEditor" "brianuuu/fcoEditor" $null '\.(zip|7z|exe)$'
 # texconv/texdiag (DirectXTex): convertir PNG <-> DDS (DXT1/DXT5 con mipmaps) para retexturizar
 Save-ReleaseAssets "texconv" "microsoft/DirectXTex" $null '^(texconv|texdiag)\.exe$'
+# aria2: gestor de descargas portable para archivos grandes (lo usa scripts\descargar.ps1)
+Save-ReleaseAssets "aria2" "aria2/aria2" $null 'win-64bit.*\.zip$'
 
 function Save-RepoFolder([string]$nombre, [string]$repo, [string]$ruta, [string]$filtro = '.') {
     $dir = Join-Path $Destino $nombre
