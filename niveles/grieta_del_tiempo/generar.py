@@ -446,7 +446,7 @@ with en(t, 180):
 with en(t, 186):
     dash_panel(0)
 with en(t, 197):
-    rampa_salto(0, boost=60, normal=55, angulo=1)            # en 0.4.1 (50/35, tendida) no se llegaba a las islas
+    rampa_salto(0, boost=68, normal=62, angulo=1)            # 50/35 tendida no llegaba; 60/55 empinada llegaba justo al borde
 # islas de asfalto sobre las nubes (huecos entre islas)
 suelo_muerte(0, 120, ancho=40, profundidad=25)
 K.avanzar(22)
@@ -610,7 +610,7 @@ anillos(-80, -45, cada=5, lado=4)
 decorado(30, 0, 25, (4, 30, 30), "costura")                               # el "ojo" del Time Eater en el cielo
 obj("GoalRing", "<GroundOffset>0</GroundOffset><IsCastShadow>true</IsCastShadow><IsMessageOn>false</IsMessageOn><Radius>4</Radius>"
     f"<Range>200</Range>{xyz('ResultPosition', a_juego(K.frame(-20, 0, 0)))}<SENumber>6</SENumber>",
-    -20, 0, 1.5, q=q_yaw())           # en las 9 zonas el GoalRing solo lleva giro horizontal (vertical por defecto)
+    -20, 0, 2.3, q=q_yaw())           # en las 9 zonas el GoalRing solo lleva giro horizontal (vertical por defecto)
 FINAL = K.frame(0, 0, 0)
 
 # ==============================================================================================

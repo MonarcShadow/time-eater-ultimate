@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.3
+- Planeo más lento en el pozo (parámetros de Sonic propios del nivel): la caída dura unos 6 s en vez de menos de 3.
+- Primera rampa con un poco más de impulso, para aterrizar encima de la isla.
+- Meta más alta: ya no queda parcialmente bajo el suelo.
+
 ## 0.4.2
 - Arreglo del cierre del juego al entrar en la caída de planeo: el escenario ahora carga las animaciones de planeo de Sonic (`SonicDiving`), que el juego solo cargaba en Chemical Plant, Speed Highway, Planet Wisp y el Egg Dragoon.
 - Primera rampa (sección 2): más impulso y ángulo empinado. Segunda rampa (sección 3): más impulso.

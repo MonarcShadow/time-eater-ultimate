@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<!-- Parámetros de Sonic solo para este escenario (redefinición parcial, como hace el #bpc original con <Water>).
+     Planeo más lento que el global de bb3\#Sonic.ar.00 (Float 40, Dive 90.1, BeginGravityScale 2.4):
+     el pozo mide 110 m y con los valores originales duraba menos de 3 s. -->
+<Sonic.prm.xml>
+  <Common>
+    <Category>
+      <Diving>
+        <Param>
+          <DivingDamageTime>1</DivingDamageTime>
+          <DivingDamageVelocityDecreaseRate>0.5</DivingDamageVelocityDecreaseRate>
+          <DivingDiveBeginGravityScale>1.2</DivingDiveBeginGravityScale>
+          <DivingDiveBeginHorzVelocityRate>0.85</DivingDiveBeginHorzVelocityRate>
+          <DivingDiveEndSpeed>20</DivingDiveEndSpeed>
+          <DivingDiveMaxVelocityDown>45</DivingDiveMaxVelocityDown>
+          <DivingDiveVelocityFront>0.7</DivingDiveVelocityFront>
+          <DivingDiveVelocitySide>0.7</DivingDiveVelocitySide>
+          <DivingFloatMaxVelocityDown>18</DivingFloatMaxVelocityDown>
+          <DivingFloatVelocityFront>0.4</DivingFloatVelocityFront>
+          <DivingFloatVelocitySide>0.4</DivingFloatVelocitySide>
+          <DivingRotationMax>20</DivingRotationMax>
+        </Param>
+      </Diving>
+    </Category>
+  </Common>
+</Sonic.prm.xml>
