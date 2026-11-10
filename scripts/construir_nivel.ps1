@@ -79,13 +79,31 @@ if (-not (Test-Path -LiteralPath $luz)) { throw "No existe $($cfg.luz).light en 
 Copy-Item -LiteralPath $luz $extTerreno
 # Cielo del escenario original (opcional): "cielo": { "modelo": "bpc300_sky", "patron": "bpc_sky_*" } copia el .model
 # y todo lo que coincida con el patrón (materiales, texturas, uv-anim). Se declara en Terrain.stg.xml con <Sky>.
+#   "cielo": { "modelos": ["bsd_sky0", "bsd_sky1"] } resuelve solo las dependencias: los .material cuyo nombre aparece
+#   dentro de cada .model, y los .dds / .uv-anim / .mat-anim cuyo nombre aparece en (o empieza por) cada material.
 if ($cfg.cielo) {
-    $modeloCielo = Join-Path $extOrigPacked "$($cfg.cielo.modelo).model"
-    if (-not (Test-Path -LiteralPath $modeloCielo)) { throw "No existe $($cfg.cielo.modelo).model en Packed\$slot del juego" }
-    Copy-Item -LiteralPath $modeloCielo $extTerreno
-    $n = 0
-    Get-ChildItem -LiteralPath $extOrigPacked -Filter $cfg.cielo.patron | ForEach-Object { Copy-Item -LiteralPath $_.FullName $extTerreno; $n++ }
-    Write-Host "   cielo $($cfg.cielo.modelo) + $n archivos"
+    $modelos = @($cfg.cielo.modelos) + @($cfg.cielo.modelo) | Where-Object { $_ }
+    $copiar = New-Object System.Collections.Generic.HashSet[string]
+    $materiales = Get-ChildItem -LiteralPath $extOrigPacked -Filter *.material
+    $texturas = Get-ChildItem -LiteralPath $extOrigPacked -Filter *.dds
+    $anims = Get-ChildItem -LiteralPath $extOrigPacked | Where-Object { $_.Name -match '\.(uv|mat)-anim$' }
+    foreach ($m in $modelos) {
+        $rutaModelo = Join-Path $extOrigPacked "$m.model"
+        if (-not (Test-Path -LiteralPath $rutaModelo)) { throw "No existe $m.model en Packed\$slot del juego" }
+        [void]$copiar.Add($rutaModelo)
+        $bytesModelo = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($rutaModelo))
+        foreach ($mat in $materiales | Where-Object { $bytesModelo.Contains($_.BaseName) }) {
+            [void]$copiar.Add($mat.FullName)
+            $bytesMat = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($mat.FullName))
+            $texturas | Where-Object { $bytesMat.Contains($_.BaseName) } | ForEach-Object { [void]$copiar.Add($_.FullName) }
+            $anims | Where-Object { $_.Name.StartsWith($mat.BaseName + "-") -or $_.BaseName -eq $mat.BaseName } | ForEach-Object { [void]$copiar.Add($_.FullName) }
+        }
+    }
+    foreach ($patron in @($cfg.cielo.patron) | Where-Object { $_ }) {      # extra opcional por patrón
+        Get-ChildItem -LiteralPath $extOrigPacked -Filter $patron | ForEach-Object { [void]$copiar.Add($_.FullName) }
+    }
+    foreach ($f in $copiar) { Copy-Item -LiteralPath $f $extTerreno -Force }
+    Write-Host "   cielo $($modelos -join ', '): $($copiar.Count) archivos"
 }
 $packedFinal = Join-Path $build "Packed\$slot"
 Empaquetar $extTerreno (Join-Path $packedFinal "$slot.ar")
@@ -131,13 +149,17 @@ Get-ChildItem $packedFinal -File | ForEach-Object { Copy-Item $_.FullName $modPa
 #    El juego decide qué archivos carga cada escenario con ArchiveTree.xml (bb3\#Application.ar.00): cada <Node>
 #    de primer nivel es un archivo y sus <Node> hijos son los escenarios que lo cargan. Se añade el slot como hijo.
 #    Se parte siempre del árbol original y se aplican los "archivos_extra" de TODOS los niveles de niveles\.
+#    Los enemigos van aparte, en EnemyArchiveTree.xml: <DefAppend><Name>escenario</Name><Archive>EnemyX</Archive>…</DefAppend>
+#    (campo "enemigos" de nivel.json, p. ej. ["EnemyEFighter"]).
 $extras = @{}
+$enemigos = @{}
 Get-ChildItem (Join-Path $raiz "niveles") -Recurse -Filter nivel.json | ForEach-Object {
     $c = Get-Content $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
     foreach ($a in @($c.archivos_extra)) { if ($a) { $extras["$a|$($c.slot)"] = @($a, $c.slot) } }
+    foreach ($a in @($c.enemigos)) { if ($a) { $enemigos["$a|$($c.slot)"] = @($a, $c.slot) } }
 }
 $modApp = Join-Path $raiz "mod\disk\bb3"
-if ($extras.Count) {
+if ($extras.Count -or $enemigos.Count) {
     Paso "7. ArchiveTree.xml: archivos extra por escenario"
     $extApp = Join-Path $build "ext_application"
     Extraer (Join-Path $raiz "archivos originales\bb3\#Application.ar.00") $extApp
@@ -158,6 +180,29 @@ if ($extras.Count) {
         Write-Host "   $esc cargará $archivo"
     }
     $arbol.Save($rutaArbol)
+    if ($enemigos.Count) {
+        $rutaEnem = Join-Path $extApp "EnemyArchiveTree.xml"
+        $arbolE = New-Object xml
+        $arbolE.PreserveWhitespace = $true
+        $arbolE.Load($rutaEnem)
+        foreach ($par in $enemigos.Values) {
+            $archivo, $esc = $par
+            if (-not $arbolE.DocumentElement.SelectSingleNode("Node//Node[Name='$archivo'] | Node[Name='$archivo']")) { throw "EnemyArchiveTree.xml no conoce '$archivo'" }
+            $def = $arbolE.DocumentElement.SelectSingleNode("DefAppend[Name='$esc']")
+            if (-not $def) {
+                $def = $arbolE.CreateElement("DefAppend")
+                $e = $arbolE.CreateElement("Name"); $e.InnerText = $esc; [void]$def.AppendChild($e)
+                [void]$arbolE.DocumentElement.AppendChild($def)
+            }
+            foreach ($necesario in @("EnemyCommon", $archivo)) {
+                if (-not $def.SelectSingleNode("Archive[.='$necesario']")) {
+                    $e = $arbolE.CreateElement("Archive"); $e.InnerText = $necesario; [void]$def.AppendChild($e)
+                    Write-Host "   $esc cargará $necesario (enemigos)"
+                }
+            }
+        }
+        $arbolE.Save($rutaEnem)
+    }
     Empaquetar $extApp (Join-Path $build "app\#Application.ar")
     New-Item -ItemType Directory -Force -Path $modApp | Out-Null
     Copy-Item -LiteralPath (Join-Path $build "app\#Application.ar.00"), (Join-Path $build "app\#Application.arl") $modApp -Force

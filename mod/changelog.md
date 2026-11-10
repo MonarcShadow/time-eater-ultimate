@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+- **Nivel laboratorio** en el portal del rival **Shadow**: una pista recta de 170 m para probar cosas arriesgadas sin tocar Grieta del Tiempo.
+- Primer experimento: dos **Egg Fighters de Rooftop Run** (a 45 m y 70 m del inicio). Para cargarlos, el escenario se añade al árbol de enemigos del juego.
+- Si el laboratorio cierra el juego, basta con no entrar a ese portal; el resto del mod no cambia.
+
 ## 0.5.1
 - El planeo termina más abajo, a unos 10 m del suelo.
 - Segunda rampa con el mismo impulso con y sin boost (antes con boost se pasaba del resorte).

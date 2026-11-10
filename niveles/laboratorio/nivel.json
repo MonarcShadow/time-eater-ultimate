@@ -1,0 +1,19 @@
+{
+  "nombre": "laboratorio",
+  "descripcion": "Nivel laboratorio (portal del rival Shadow): pista recta para probar objetos y enemigos de otras zonas sin arriesgar Grieta del Tiempo",
+  "slot": "bsd",
+  "cpk": "bb2",
+  "luz": "Direct01",
+  "cielo": { "modelos": ["bsd_sky0", "bsd_sky1"] },
+  "archivos_base": ["SceneEffect.prm.xml", "Terrain.prm.xml", "BossRivalSetting.prm.xml"],
+  "enemigos": ["EnemyEFighter"],
+  "escena": {
+    "largo": 170,
+    "ancho": 18,
+    "camino_2d": false,
+    "meta_x": 150,
+    "tag_colision": "ROCK",
+    "color_a": [0.25, 0.60, 0.35],
+    "color_b": [0.10, 0.20, 0.15]
+  }
+}

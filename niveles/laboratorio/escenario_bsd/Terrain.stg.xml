@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<Stage xsi:noNamespaceSchemaLocation="http://web/chao/project/swa/schema/Stage.stg.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Terrain>
+    <TerrainInfoFile>terrain</TerrainInfoFile>
+    <GIAtlas>1</GIAtlas>
+  </Terrain>
+  <Terrain>
+    <RigidBodyContainer>teu_camino_col</RigidBodyContainer>
+    <IsCollisionRender>false</IsCollisionRender>
+  </Terrain>
+  <Light>
+    <DataName>Direct01</DataName>
+  </Light>
+  <Sky>
+    <Model>bsd_sky0</Model>
+    <Model>bsd_sky1</Model>
+  </Sky>
+</Stage>
