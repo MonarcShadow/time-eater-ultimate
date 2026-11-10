@@ -345,8 +345,9 @@ def rot(q):
 def obj(tipo, campos, adelante=0.0, lado=0.0, arriba=0.0, q=None, pos=None):
     p = a_juego(pos if pos else K.frame(adelante, lado, arriba))
     q = q or q_yaw()
-    OBJETOS.append(f"  <{tipo}>{campos}{xyz('Position', p)}{rot(q)}<SetObjectID>{nuevo_id()}</SetObjectID></{tipo}>")
-    return p
+    sid = nuevo_id()
+    OBJETOS.append(f"  <{tipo}>{campos}{xyz('Position', p)}{rot(q)}<SetObjectID>{sid}</SetObjectID></{tipo}>")
+    return sid                       # SetObjectID asignado, para enlazar objetos entre sí (p. ej. volumen de cámara -> cámara)
 
 
 CAMPOS_RING = ("<GroundOffset>0</GroundOffset><InitDisp>false</InitDisp><IsCastShadow>true</IsCastShadow>"
@@ -402,6 +403,23 @@ def aro_impulso(adelante, lado=0.0, arriba=1.6, velocidad=25):
         "<IsChangeCameraWhenChangePath>false</IsChangeCameraWhenChangePath><IsChangePath>false</IsChangePath>"
         "<IsHeadToVelocity>false</IsHeadToVelocity><IsTo3D>false</IsTo3D><KeepVelocityDistance>5</KeepVelocityDistance>"
         "<OutOfControl>0.5</OutOfControl><Range>60</Range>", adelante, lado, arriba, q=q_yaw(math.pi))
+
+
+def egg_fighter(adelante, lado=0.0):
+    """Egg Fighter de Rooftop Run (EnemyEFighter3D), mirando hacia Sonic. Requiere "enemigos": ["EnemyEFighter"] en
+    nivel.json. Parámetros de euc200 sin ChaserManager; probado en el laboratorio (release 0.6.0)."""
+    obj("EnemyEFighter3D", "<ActionRange>100</ActionRange><AttackRange>4.5</AttackRange><BarrelID><SetObjectID>0</SetObjectID></BarrelID>"
+        "<ChaserManagerID><SetObjectID>0</SetObjectID></ChaserManagerID><GroundOffset>0</GroundOffset><IsAimTarget>false</IsAimTarget>"
+        "<IsArrivalEffect>true</IsArrivalEffect><IsCastShadow>true</IsCastShadow><IsDamageFromOnlyPlayer>true</IsDamageFromOnlyPlayer>"
+        "<IsPlayFindMotion>true</IsPlayFindMotion><Range>200</Range><SearchType>1</SearchType>"
+        "<Target><x>0</x><y>0</y><z>0</z></Target><WayPointA><x>0</x><y>0</y><z>0</z></WayPointA><WayPointB><x>0</x><y>0</y><z>0</z></WayPointB>"
+        "<m_AttackMoveSpeedRatio>1</m_AttackMoveSpeedRatio><m_ChargeTime>0.5</m_ChargeTime><m_ChaserModeVelocity>5</m_ChaserModeVelocity>"
+        "<m_FindMotionType>1</m_FindMotionType><m_IsAllRangeSearch>false</m_IsAllRangeSearch><m_IsAttack>true</m_IsAttack>"
+        "<m_IsChaseAfter>false</m_IsChaseAfter><m_IsChaserMode>false</m_IsChaserMode><m_IsForceSmartTurn>false</m_IsForceSmartTurn>"
+        "<m_IsPushBarrelMode>false</m_IsPushBarrelMode><m_IsPushBarrelOnce>false</m_IsPushBarrelOnce><m_IsPushDirRight>true</m_IsPushDirRight>"
+        "<m_IsRestrictMove>false</m_IsRestrictMove><m_LostTime>10</m_LostTime><m_MoveSpeedRatio>1</m_MoveSpeedRatio>"
+        "<m_PushBarrelSpanTime>2</m_PushBarrelSpanTime><m_SeekSpanTime>3</m_SeekSpanTime><m_TurnAccel>4</m_TurnAccel><m_WaitTime>0.3</m_WaitTime>",
+        adelante, lado, 0.0, q=q_yaw(math.pi))
 
 
 def grind_dash(pos_blender, velocidad=60):
@@ -513,11 +531,15 @@ for i, h in enumerate(alturas):
 x2d += 12.0                                                  # fin de la última plataforma
 K.avanzar(x2d)
 a_2d(8, salida=True)                                         # vuelta a 3D ya sobre la carretera, 20 m después del último hueco
-carretera(30, ancho=14, mat="ghz")
+t = carretera(30, ancho=14, mat="ghz")
+with en(t, 22):
+    egg_fighter(0, -3)                                       # Egg Fighters de Rooftop Run custodiando la entrada a la calle
 
-# --- 2. Calle sobre las ruinas: City Escape + Sky Sanctuary (+ Egg Fighters de Rooftop Run en la v1) ---
+# --- 2. Calle sobre las ruinas: City Escape + Sky Sanctuary + Egg Fighters de Rooftop Run ---------------
 costura(14)
-carretera(20, ancho=16, mat="cte")
+t = carretera(20, ancho=16, mat="cte")
+with en(t, 6):
+    egg_fighter(0, 3.5)
 a_quickstep(-5)
 curva_recta("s2_qs@QS", -5, 205, arriba=0.0)
 t = carretera(200, ancho=16, dz=-25, mat="cte", mat_muro="ssz")
@@ -557,7 +579,11 @@ for i in range(3):
         visual(-9.6, 3, -1.5, (1.5, 3, 1.2), "cte", 20)        # trozos de asfalto desprendidos (sin colisión)
         visual(9.8, -2, -2.5, (1.2, 2.5, 1.0), "cte", -15)
     K.avanzar(9)
-carretera(25, ancho=14, mat="ssz")
+t = carretera(25, ancho=14, mat="ssz")
+with en(t, 10):
+    egg_fighter(0, -3)                                       # dos más esperando al aterrizar de las islas
+with en(t, 18):
+    egg_fighter(0, 3)
 
 # --- 3. Mar en llamas: Seaside Hill + lava de Crisis City + tornado ----------------------------------
 # curva a la izquierda sin paneles y con muro exterior (derecho) de 3 m; después, recta con panel y rampa
@@ -729,6 +755,23 @@ obj("ChangeDiveBegin", f"<Collision_Height>{2 * R_BOCA:g}</Collision_Height><Col
 obj("ChangeDiveEndNoEvent", "<Collision_Height>30</Collision_Height><Collision_Length>3</Collision_Length>"
     f"<Collision_Width>30</Collision_Width>{CAMPOS_DIVE}<Range>100</Range>",
     pos=(centro[0], centro[1], fondo_z + 8.5), q=Q_HORIZONTAL)     # caja de 3 m de grosor: el planeo acaba a ~10 m del suelo
+# Cámara de planeo, como en Chemical Plant / Speed Highway: un volumen que cubre la caída activa una cámara paralela
+# que mira casi en vertical hacia abajo, para ver los escombros que vienen (con la cámara normal no se veían).
+alto_vol = PROF - 12
+id_cam = obj("ObjCameraParallel", "<Distance>10</Distance><Ease_Time_Enter>0</Ease_Time_Enter><Ease_Time_Leave>0</Ease_Time_Leave>"
+             "<Fovy>50</Fovy><GroundOffset>0</GroundOffset><IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow>"
+             "<IsCollision>false</IsCollision><IsControllable>false</IsControllable><OffsetPitch>0</OffsetPitch><OffsetYaw>0</OffsetYaw>"
+             "<Pitch>85</Pitch><Range>100000</Range><Target><SetObjectID>0</SetObjectID></Target>"
+             "<TargetOffset_Front>0</TargetOffset_Front><TargetOffset_Right>0</TargetOffset_Right><TargetOffset_Up>0</TargetOffset_Up>"
+             "<TargetOffset_Vel>0</TargetOffset_Vel><TargetPositionFix><x>0</x><y>0</y><z>0</z></TargetPositionFix><Target_Type>0</Target_Type>"
+             f"<VelOffsetXYZ>0</VelOffsetXYZ><Yaw>{math.degrees(math.pi / 2 + K.th):.1f}</Yaw><ZRot>0</ZRot>",
+             pos=(centro[0], centro[1], centro[2]), q=(1.0, 0.0, 0.0, 0.0))
+obj("ChangeVolumeCamera", f"<Collision_Height>{alto_vol:g}</Collision_Height><Collision_Length>28</Collision_Length>"
+    "<Collision_Width>28</Collision_Width><DefaultStatus>0</DefaultStatus><Ease_Time_Enter>1</Ease_Time_Enter>"
+    "<Ease_Time_Leave>1.1</Ease_Time_Leave><GroundOffset>0</GroundOffset><IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow>"
+    "<IsEnableCollision>false</IsEnableCollision><LineType>0</LineType><PositionList /><Priority>0</Priority><Range>300</Range>"
+    f"<Shape_Type>0</Shape_Type><Target><SetObjectID>{id_cam}</SetObjectID></Target>",
+    pos=(centro[0], centro[1], centro[2] - 2 - alto_vol / 2), q=(1.0, 0.0, 0.0, 0.0))
 for k in range(24):                                     # anillos en espiral: guían el planeo alrededor de los escombros
     a_esp = k * 0.7
     obj("Ring", CAMPOS_RING, pos=(centro[0] + 4.5 * math.cos(a_esp), centro[1] + 4.5 * math.sin(a_esp), centro[2] - 10 - 3.6 * k))

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1
+- **Grieta del Tiempo:** cámara de planeo que mira desde arriba durante la caída, para ver los escombros.
+- **Grieta del Tiempo:** cuatro Egg Fighters de Rooftop Run en la sección 2 (dos antes de la calle y dos al aterrizar de las islas).
+- **Laboratorio:** segundo experimento con objetos de Sky Sanctuary: una nube que hace rebotar (a 95 m) y una plataforma giratoria (a 120 m).
+
 ## 0.6.0
 - **Nivel laboratorio** en el portal del rival **Shadow**: una pista recta de 170 m para probar cosas arriesgadas sin tocar Grieta del Tiempo.
 - Primer experimento: dos **Egg Fighters de Rooftop Run** (a 45 m y 70 m del inicio). Para cargarlos, el escenario se añade al árbol de enemigos del juego.

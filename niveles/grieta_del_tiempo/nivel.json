@@ -8,6 +8,7 @@
   "script": "generar.py",
   "archivos_base": ["SceneEffect.prm.xml", "Terrain.prm.xml"],
   "archivos_extra": ["SonicDiving"],
+  "enemigos": ["EnemyEFighter"],
   "bgm_container": "SNG15_BPC",
   "bgm_nombre": "Boss_Perfect_Chaos1"
 }
