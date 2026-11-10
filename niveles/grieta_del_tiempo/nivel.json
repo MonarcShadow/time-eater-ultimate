@@ -6,6 +6,7 @@
   "luz": "bpc_Direct00",
   "script": "generar.py",
   "archivos_base": ["SceneEffect.prm.xml", "Terrain.prm.xml"],
+  "archivos_extra": ["SonicDiving"],
   "bgm_container": "SNG15_BPC",
   "bgm_nombre": "Boss_Perfect_Chaos1"
 }

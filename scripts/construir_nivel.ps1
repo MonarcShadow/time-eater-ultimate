@@ -117,6 +117,44 @@ if (Test-Path -LiteralPath $modPacked) { Remove-Item -LiteralPath $modPacked -Re
 New-Item -ItemType Directory -Force -Path $modPacked | Out-Null
 Copy-Item -LiteralPath (Join-Path $build "#$slot.ar.00"), (Join-Path $build "#$slot.arl") $modDisk -Force
 Get-ChildItem $packedFinal -File | ForEach-Object { Copy-Item $_.FullName $modPacked -Force }
+# 7. Archivos extra del juego que el escenario necesita cargar (p. ej. SonicDiving = animaciones de planeo).
+#    El juego decide qué archivos carga cada escenario con ArchiveTree.xml (bb3\#Application.ar.00): cada <Node>
+#    de primer nivel es un archivo y sus <Node> hijos son los escenarios que lo cargan. Se añade el slot como hijo.
+#    Se parte siempre del árbol original y se aplican los "archivos_extra" de TODOS los niveles de niveles\.
+$extras = @{}
+Get-ChildItem (Join-Path $raiz "niveles") -Recurse -Filter nivel.json | ForEach-Object {
+    $c = Get-Content $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+    foreach ($a in @($c.archivos_extra)) { if ($a) { $extras["$a|$($c.slot)"] = @($a, $c.slot) } }
+}
+$modApp = Join-Path $raiz "mod\disk\bb3"
+if ($extras.Count) {
+    Paso "7. ArchiveTree.xml: archivos extra por escenario"
+    $extApp = Join-Path $build "ext_application"
+    Extraer (Join-Path $raiz "archivos originales\bb3\#Application.ar.00") $extApp
+    $rutaArbol = Join-Path $extApp "ArchiveTree.xml"
+    $arbol = New-Object xml
+    $arbol.PreserveWhitespace = $true
+    $arbol.Load($rutaArbol)
+    foreach ($par in $extras.Values) {
+        $archivo, $esc = $par
+        $padre = $arbol.DocumentElement.SelectSingleNode("Node[Name='$archivo']")
+        if (-not $padre) { throw "ArchiveTree.xml no tiene el archivo '$archivo'" }
+        if ($padre.SelectSingleNode("Node[Name='$esc']")) { continue }
+        $nodo = $arbol.CreateElement("Node")
+        foreach ($kv in @(@("Name", $esc), @("Archive", $esc), @("Order", "0"))) {
+            $e = $arbol.CreateElement($kv[0]); $e.InnerText = $kv[1]; [void]$nodo.AppendChild($e)
+        }
+        [void]$padre.AppendChild($nodo)
+        Write-Host "   $esc cargará $archivo"
+    }
+    $arbol.Save($rutaArbol)
+    Empaquetar $extApp (Join-Path $build "app\#Application.ar")
+    New-Item -ItemType Directory -Force -Path $modApp | Out-Null
+    Copy-Item -LiteralPath (Join-Path $build "app\#Application.ar.00"), (Join-Path $build "app\#Application.arl") $modApp -Force
+} elseif (Test-Path -LiteralPath (Join-Path $modApp "#Application.ar.00")) {
+    Remove-Item -LiteralPath (Join-Path $modApp "#Application.ar.00"), (Join-Path $modApp "#Application.arl") -Force
+}
+
 Get-ChildItem -LiteralPath $modDisk -Recurse -File | Where-Object { $_.Name -like "*$slot*" -or $_.DirectoryName -like "*\$slot" } |
     ForEach-Object { "  {0}  {1:N0} bytes" -f $_.FullName.Substring($raiz.Length + 1), $_.Length }
 Write-Host "Nivel '$Nivel' instalado en mod\ (slot $slot)" -ForegroundColor Green

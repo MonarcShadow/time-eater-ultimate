@@ -315,8 +315,9 @@ def resorte_vertical(adelante, lado=0.0, arriba=0.0, velocidad=30, a_3d=False, m
         adelante, lado, arriba, q=(1.0, 0.0, 0.0, 0.0))
 
 
-def rampa_salto(adelante, lado=0.0, boost=50, normal=35):
-    obj("JumpBoard", "<AngleType>0</AngleType><GroundOffset>0</GroundOffset>"
+def rampa_salto(adelante, lado=0.0, boost=50, normal=35, angulo=0):
+    """JumpBoard. angulo = AngleType del juego: 0 = rampa tendida, 1 = rampa empinada."""
+    obj("JumpBoard", f"<AngleType>{angulo}</AngleType><GroundOffset>0</GroundOffset>"
         f"<ImpulseSpeedOnBoost>{boost}</ImpulseSpeedOnBoost><ImpulseSpeedOnNormal>{normal}</ImpulseSpeedOnNormal>"
         "<IsCastShadow>false</IsCastShadow><IsTo3D>false</IsTo3D><LookBack>false</LookBack><OutOfControl>1.5</OutOfControl>"
         "<Range>60</Range><RigidBody>true</RigidBody>", adelante, lado, 0.0,
@@ -445,7 +446,7 @@ with en(t, 180):
 with en(t, 186):
     dash_panel(0)
 with en(t, 197):
-    rampa_salto(0)
+    rampa_salto(0, boost=60, normal=55, angulo=1)            # en 0.4.1 (50/35, tendida) no se llegaba a las islas
 # islas de asfalto sobre las nubes (huecos entre islas)
 suelo_muerte(0, 120, ancho=40, profundidad=25)
 K.avanzar(22)
@@ -476,7 +477,7 @@ anillos(5, 30, cada=5, tramo=t)
 with en(t, 32):
     dash_panel(0)
 with en(t, 47):
-    rampa_salto(0, boost=55, normal=40)
+    rampa_salto(0, boost=70, normal=60)                                     # en 0.4.1 (55/40) faltaba impulso
 suelo_muerte(0, 40, ancho=50, profundidad=20)
 K.avanzar(28)
 
@@ -609,7 +610,7 @@ anillos(-80, -45, cada=5, lado=4)
 decorado(30, 0, 25, (4, 30, 30), "costura")                               # el "ojo" del Time Eater en el cielo
 obj("GoalRing", "<GroundOffset>0</GroundOffset><IsCastShadow>true</IsCastShadow><IsMessageOn>false</IsMessageOn><Radius>4</Radius>"
     f"<Range>200</Range>{xyz('ResultPosition', a_juego(K.frame(-20, 0, 0)))}<SENumber>6</SENumber>",
-    -20, 0, 2.5, q=q_yaw())           # en las 9 zonas el GoalRing solo lleva giro horizontal (vertical por defecto)
+    -20, 0, 1.5, q=q_yaw())           # en las 9 zonas el GoalRing solo lleva giro horizontal (vertical por defecto)
 FINAL = K.frame(0, 0, 0)
 
 # ==============================================================================================

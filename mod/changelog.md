@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.2
+- Arreglo del cierre del juego al entrar en la caída de planeo: el escenario ahora carga las animaciones de planeo de Sonic (`SonicDiving`), que el juego solo cargaba en Chemical Plant, Speed Highway, Planet Wisp y el Egg Dragoon.
+- Primera rampa (sección 2): más impulso y ángulo empinado. Segunda rampa (sección 3): más impulso.
+- Meta de vuelta a su altura original (se mantiene en vertical).
+
 ## 0.4.1
 Correcciones de Grieta del Tiempo tras la primera prueba:
 - Rampas de salto giradas 180° (ahora lanzan hacia adelante) y meta en vertical.
