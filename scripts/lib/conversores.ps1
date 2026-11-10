@@ -75,7 +75,7 @@ function Invoke-ConversorGui([string]$exe, [string]$ini, [hashtable]$valores, [s
             $hecho = ($archivoFinal -and (Test-Path $archivoFinal))
             $log = ""
             if ($idProgreso) { try { $log = Get-TextoControl (Find-Control $w $idProgreso) } catch {} }
-            if ($log -match '(?i)(done|finished|complete|success)') { $hecho = $true }
+            if ($log -match 'SUCCESS: Conversion complete|(?m)^\S+: ERROR') { $hecho = $true }
             if ($p.HasExited) { break }
         } while (-not $hecho -and (Get-Date) -lt $limite)
         Start-Sleep -Milliseconds 1500

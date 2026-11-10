@@ -1,6 +1,7 @@
 # Acto 2 (Sonic moderno) — "Grieta del Tiempo"
 
-> Estado: **diseño** (2026-11-10). Slot previsto: `bpc` (portal de Perfect Chaos), Sonic moderno.
+> Estado: **versión 0 (caja gris) construida** (2026-11-10, release 0.4.0). Slot: `bpc` (portal de Perfect Chaos), Sonic moderno.
+> Generador: `niveles\grieta_del_tiempo\generar.py` · construir: `scripts\construir_nivel.ps1 -Nivel grieta_del_tiempo` · vistas de control: `niveles\comun\vista_previa.py`.
 > Los nombres de objetos (`DashPanel`, `SszRollingFloor`…) son los reales del set data de cada zona: ver la tabla del final.
 
 ## La idea

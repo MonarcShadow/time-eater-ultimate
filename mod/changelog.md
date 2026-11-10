@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+- **Grieta del Tiempo v0 (caja gris)** en el portal de Perfect Chaos (Acto 2, Sonic moderno): el recorrido completo de las 8 secciones del diseño con geometría simple (~1,4 km). Los bloques de colores marcan qué zona aporta cada pieza.
+  1. Colina contaminada (3D + plataformas en 2D) · 2. Calle sobre las ruinas (quickstep cuesta abajo + rampa a islas flotantes) · 3. Mar en llamas (pista ancha en curva + rampa) · 4. Fábrica dentro de la torre (subida en 2D con resortes) · 5. Rascacielos invertido (bajada empinada + escalón con resorte) · 6. Persecución (tejados con huecos + riel de grind) · 7. Caída de las 9 eras (pozo de 110 m) · 8. Blanco (riel corto y meta).
+- Solo objetos básicos (anillos, paneles de impulso, resortes, rampas, cambios a 2D/quickstep, meta). Enemigos y gimmicks de cada zona llegan en próximas versiones.
+
 ## 0.3.0
 - Nivel de prueba moderno en el portal de **Perfect Chaos** (Acto 2, Sonic moderno): un camino recto de 130 m en 3D con dos paneles de impulso, anillos y la meta (GoalRing) a 100 m.
 - El nivel de prueba del Death Egg Robot (Acto 1) se mantiene igual (probado: se puede completar, la meta y la puntuación funcionan).

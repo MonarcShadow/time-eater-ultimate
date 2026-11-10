@@ -44,9 +44,11 @@ $env:BLENDER_USER_EXTENSIONS = "$bcfg\extensions"; $env:BLENDER_USER_DATAFILES =
 $blender = Get-Content (Join-Path $bcfg "blender_exe.txt")
 $salidaBl = Join-Path $build "blender"
 $ErrorActionPreference = "Continue"   # Blender escribe avisos en stderr; en PS 5.1 eso no debe cortar el script
-$log = & $blender --background --factory-startup --python (Join-Path $raiz "niveles\comun\crear_camino.py") -- $dirNivel $salidaBl 2>&1 | ForEach-Object { "$_" }
+$script = if ($cfg.script) { Join-Path $dirNivel $cfg.script } else { Join-Path $raiz "niveles\comun\crear_camino.py" }
+$log = & $blender --background --factory-startup --python $script -- $dirNivel $salidaBl 2>&1 | ForEach-Object { "$_" }
 $ErrorActionPreference = "Stop"
 if (-not ($log -match "TEU_ESCENA_OK")) { $log | Select-Object -Last 30; throw "Blender no terminó la escena" }
+$log | Where-Object { $_ -match "TEU_RESUMEN" } | ForEach-Object { Write-Host "   $_" }
 Copy-Item (Join-Path $salidaBl "$($cfg.nombre).blend") $dirNivel -Force   # la escena queda en el repo para editarla
 
 # 2. Hedgehog Converter -------------------------------------------------------------------------
@@ -100,6 +102,9 @@ $hash = Join-Path $build "hash_$slot"
 New-Item -ItemType Directory -Force -Path $hash | Out-Null
 foreach ($f in $cfg.archivos_base) { Copy-Item -LiteralPath (Join-Path $extOrigHash $f) $hash }
 Get-ChildItem -LiteralPath (Join-Path $dirNivel "escenario_$slot") -File | ForEach-Object { Copy-Item -LiteralPath $_.FullName $hash }
+# XML generados por el script del nivel (set data, Stage.stg.xml…): reemplazan a los fijos
+$generados = Join-Path $salidaBl "escenario"
+if (Test-Path -LiteralPath $generados) { Get-ChildItem -LiteralPath $generados -File | ForEach-Object { Copy-Item -LiteralPath $_.FullName $hash -Force } }
 $path = Join-Path $salidaBl "$slot.path.xml"
 if (Test-Path -LiteralPath $path) { Copy-Item -LiteralPath $path $hash }
 Copy-Item -LiteralPath $hkx $hash

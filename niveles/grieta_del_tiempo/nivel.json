@@ -1,0 +1,11 @@
+{
+  "nombre": "grieta_del_tiempo",
+  "descripcion": "Acto 2 'Grieta del Tiempo' v0 (caja gris): las 8 secciones del diseño con geometría simple (portal de Perfect Chaos)",
+  "slot": "bpc",
+  "cpk": "bb",
+  "luz": "bpc_Direct00",
+  "script": "generar.py",
+  "archivos_base": ["SceneEffect.prm.xml", "Terrain.prm.xml"],
+  "bgm_container": "SNG15_BPC",
+  "bgm_nombre": "Boss_Perfect_Chaos1"
+}
