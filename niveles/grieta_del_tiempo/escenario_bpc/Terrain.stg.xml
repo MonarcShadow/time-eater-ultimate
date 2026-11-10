@@ -11,4 +11,7 @@
   <Light>
     <DataName>bpc_Direct00</DataName>
   </Light>
+  <Sky>
+    <Model>bpc300_sky</Model>
+  </Sky>
 </Stage>

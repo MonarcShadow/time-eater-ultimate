@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0
+Grieta del Tiempo, fase B: las 8 secciones con más forma.
+- **Cielo**: el de Perfect Chaos en lugar del fondo negro.
+- **Costuras moradas** (franja y dos postes) en cada unión entre secciones.
+- S1: acantilados de Green Hill, tuberías de Chemical Plant que cruzan sobre la pista, un tanque y charcos de Mega Mack.
+- S2: fachadas de City Escape a ambos lados, rematadas con trozos de ruina de Sky Sanctuary; columnas y asfalto desprendido en las islas.
+- S3: el mar alrededor de la pista, **manchas de lava que hacen daño**, pilares (uno ya sin color) y un tornado.
+- S4: la pared de la torre sigue toda la escalera y lleva engranajes.
+- S5: ventanas iluminadas, tanques y agua en la cascada.
+- S6: casas vecinas y chimeneas en los tejados.
+- S7: escombros repartidos para el planeo lento y anillos en espiral.
+- S8: explanada blanca más ancha, columnas desteñidas, aguja más larga y el ojo del Time Eater como disco.
+- Prueba: un aro de impulso (DashRing) cerca de la meta, para comprobar su orientación.
+
 ## 0.4.3
 - Planeo más lento en el pozo (parámetros de Sonic propios del nivel): la caída dura unos 6 s en vez de menos de 3.
 - Primera rampa con un poco más de impulso, para aterrizar encima de la isla.

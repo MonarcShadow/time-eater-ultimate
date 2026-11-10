@@ -77,6 +77,16 @@ Extraer (Join-Path $orig "Packed\$slot\$slot.ar.00") $extOrigPacked
 $luz = Join-Path $extOrigPacked "$($cfg.luz).light"
 if (-not (Test-Path -LiteralPath $luz)) { throw "No existe $($cfg.luz).light en Packed\$slot del juego" }
 Copy-Item -LiteralPath $luz $extTerreno
+# Cielo del escenario original (opcional): "cielo": { "modelo": "bpc300_sky", "patron": "bpc_sky_*" } copia el .model
+# y todo lo que coincida con el patrón (materiales, texturas, uv-anim). Se declara en Terrain.stg.xml con <Sky>.
+if ($cfg.cielo) {
+    $modeloCielo = Join-Path $extOrigPacked "$($cfg.cielo.modelo).model"
+    if (-not (Test-Path -LiteralPath $modeloCielo)) { throw "No existe $($cfg.cielo.modelo).model en Packed\$slot del juego" }
+    Copy-Item -LiteralPath $modeloCielo $extTerreno
+    $n = 0
+    Get-ChildItem -LiteralPath $extOrigPacked -Filter $cfg.cielo.patron | ForEach-Object { Copy-Item -LiteralPath $_.FullName $extTerreno; $n++ }
+    Write-Host "   cielo $($cfg.cielo.modelo) + $n archivos"
+}
 $packedFinal = Join-Path $build "Packed\$slot"
 Empaquetar $extTerreno (Join-Path $packedFinal "$slot.ar")
 Copy-Item (Join-Path $terreno "Stage.pfd"), (Join-Path $terreno "Stage-Add.pfd") $packedFinal

@@ -1,9 +1,10 @@
 {
   "nombre": "grieta_del_tiempo",
-  "descripcion": "Acto 2 'Grieta del Tiempo' v0 (caja gris): las 8 secciones del diseño con geometría simple (portal de Perfect Chaos)",
+  "descripcion": "Acto 2 'Grieta del Tiempo' (fase B): las 8 secciones con forma, cielo y costuras, geometría propia (portal de Perfect Chaos)",
   "slot": "bpc",
   "cpk": "bb",
   "luz": "bpc_Direct00",
+  "cielo": { "modelo": "bpc300_sky", "patron": "bpc_sky_*" },
   "script": "generar.py",
   "archivos_base": ["SceneEffect.prm.xml", "Terrain.prm.xml"],
   "archivos_extra": ["SonicDiving"],
