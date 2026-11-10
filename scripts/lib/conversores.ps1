@@ -53,9 +53,19 @@ function Invoke-ConversorGui([string]$exe, [string]$ini, [hashtable]$valores, [s
     [IO.File]::WriteAllLines((Join-Path $script:BinLibgens $ini), $lineas)
     $p = Start-Process (Join-Path $script:BinLibgens $exe) -WorkingDirectory $script:BinLibgens -PassThru
     try {
-        $w = Get-VentanaProceso $p.Id
-        Start-Sleep -Milliseconds 800
-        $boton = Find-Control $w ($w.Current.AutomationId + ".centralwidget.pb_convert")
+        # la ventana puede aparecer antes que sus controles: reintentar hasta encontrar el botón "Convert"
+        $boton = $null
+        $condBoton = New-Object Windows.Automation.AndCondition(
+            (New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Button)),
+            (New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::NameProperty, "Convert")))
+        $limiteUi = (Get-Date).AddSeconds(30)
+        while (-not $boton -and (Get-Date) -lt $limiteUi) {
+            Start-Sleep -Milliseconds 500
+            $w = Get-VentanaProceso $p.Id
+            $boton = $w.FindFirst([Windows.Automation.TreeScope]::Descendants, $condBoton)
+        }
+        if (-not $boton) { throw "No apareció el botón Convert de $exe" }
+        Start-Sleep -Milliseconds 500
         $boton.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
         $limite = (Get-Date).AddSeconds($timeoutSeg)
         $mensajes = @()
@@ -63,7 +73,8 @@ function Invoke-ConversorGui([string]$exe, [string]$ini, [hashtable]$valores, [s
             Start-Sleep -Milliseconds 700
             $mensajes += Close-Dialogos $p.Id
             $hecho = ($archivoFinal -and (Test-Path $archivoFinal))
-            $log = if ($idProgreso) { Get-TextoControl (Find-Control $w $idProgreso) } else { "" }
+            $log = ""
+            if ($idProgreso) { try { $log = Get-TextoControl (Find-Control $w $idProgreso) } catch {} }
             if ($log -match '(?i)(done|finished|complete|success)') { $hecho = $true }
             if ($p.HasExited) { break }
         } while (-not $hecho -and (Get-Date) -lt $limite)

@@ -1,0 +1,15 @@
+{
+  "nombre": "prueba_camino",
+  "descripcion": "Acto 1 de prueba: camino recto en 2D con Sonic clásico (portal del Death Egg Robot)",
+  "slot": "bde",
+  "cpk": "bb",
+  "luz": "Direct01",
+  "archivos_base": ["SceneEffect.prm.xml", "Terrain.prm.xml", "StageAct.prm.xml", "BossRivalSetting.prm.xml", "BossDeathEgg.lua"],
+  "escena": {
+    "largo": 40,
+    "ancho": 8,
+    "camino_2d": true,
+    "meta_x": 25,
+    "tag_colision": "ROCK"
+  }
+}

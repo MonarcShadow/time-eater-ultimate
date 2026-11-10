@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!-- Nivel de prueba moderno (Time Eater Ultimate) en el slot de Perfect Chaos (bpc, Sonic moderno) -->
+<Stage>
+  <Sonic>
+    <Position>
+      <x>0</x>
+      <y>0.1</y>
+      <z>0</z>
+    </Position>
+    <Yaw>90</Yaw>
+    <Start>
+      <Mode>None</Mode>
+      <Speed>0</Speed>
+      <Time>0</Time>
+    </Start>
+    <DeadHeight>-30</DeadHeight>
+    <CameraView>Forward</CameraView>
+  </Sonic>
+  <BGM>
+    <IsStream>true</IsStream>
+    <Container>SNG15_BPC</Container>
+    <Name>Boss_Perfect_Chaos1</Name>
+  </BGM>
+</Stage>
