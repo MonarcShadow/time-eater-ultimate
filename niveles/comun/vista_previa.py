@@ -25,6 +25,35 @@ def material(nombre, color):
     return m
 
 
+# --- comprobaciones automáticas (antes de crear los marcadores, para que los rayos solo toquen el nivel) ---
+dg = bpy.context.evaluated_depsgraph_get()
+ABAJO = Vector((0, 0, -1))
+
+
+def hay_suelo(p, alto=1.5, alcance=4.0):
+    ok, _, _, _, ob, _ = escena.ray_cast(dg, p + Vector((0, 0, alto)), ABAJO, distance=alcance)
+    return ok and ob.name.startswith("teu_camino")
+
+
+avisos = 0
+for el in ET.parse(setdata).getroot():
+    p = el.find("Position")
+    gx, gy, gz = (float(p.find(c).text) for c in "xyz")
+    pos = Vector((gx, -gz, gy))
+    if el.tag.startswith("ChangeMode_"):
+        r = el.find("Rotation")
+        th = 2 * math.atan2(float(r.find("y").text), float(r.find("w").text)) - math.pi / 2
+        d = Vector((math.cos(th), math.sin(th), 0))
+        for nombre, q in (("en el trigger", pos), ("8 m antes/después", pos + d * 8), ("8 m después/antes", pos - d * 8)):
+            if not hay_suelo(q):
+                avisos += 1
+                print(f"TEU_AVISO {el.tag} en ({gx:.0f},{gy:.0f},{gz:.0f}): no hay suelo {nombre} (¿precipicio cerca?)")
+    elif el.tag in ("DashPanel", "JumpBoard", "Spring"):
+        if not hay_suelo(pos, alto=1.0, alcance=1.6):
+            avisos += 1
+            print(f"TEU_AVISO {el.tag} en ({gx:.0f},{gy:.0f},{gz:.0f}): no está apoyado en el suelo")
+print(f"TEU_COMPROBACION avisos={avisos}")
+
 COLORES = {"Ring": (1, 0.85, 0), "DashPanel": (0, 0.4, 1), "JumpBoard": (0, 0.4, 1), "Spring": (0, 0.8, 1),
            "GrindDashPanel": (0, 1, 0.5), "GoalRing": (1, 1, 1)}
 mats = {}
@@ -126,4 +155,20 @@ for el in ET.parse(setdata).getroot():
     mirar(cam, pos + adelante * 15 + Vector((0, 0, 8)))
     k += 1
     render(f"2d_{k:02d}")
+
+# vistas de cada zona de planeo (ChangeDiveBegin): desde arriba en diagonal y de lado
+k = 0
+for el in ET.parse(setdata).getroot():
+    if el.tag != "ChangeDiveBegin":
+        continue
+    p = el.find("Position")
+    gx, gy, gz = (float(p.find(c).text) for c in "xyz")
+    pos = Vector((gx, -gz, gy))
+    k += 1
+    cam.location = pos + Vector((-45, 30, 45))
+    mirar(cam, pos + Vector((0, 0, -10)))
+    render(f"pozo_{k:02d}_arriba")
+    cam.location = pos + Vector((-20, 120, -40))
+    mirar(cam, pos + Vector((0, 0, -55)))
+    render(f"pozo_{k:02d}_lado")
 print("TEU_PREVIA_OK")

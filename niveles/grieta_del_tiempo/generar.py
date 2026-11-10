@@ -132,6 +132,7 @@ def nuevo_id():
 class Cursor:
     def __init__(self):
         self.x, self.y, self.z, self.th = 0.0, 0.0, 0.0, 0.0
+        self.pend = 0.0          # pendiente del suelo en el punto actual (radianes, + = cuesta arriba)
 
     def frame(self, adelante=0.0, lado=0.0, arriba=0.0):
         c, s = math.cos(self.th), math.sin(self.th)
@@ -161,6 +162,11 @@ class Tramo:
                 return tuple(a[i] + (b[i] - a[i]) * t for i in range(4))
         return self.m[-1][:4]
 
+    def pendiente(self, s):
+        """Ángulo de la pendiente en s (radianes, + = cuesta arriba)."""
+        a, b = self.estado(max(0.0, s - 1.0)), self.estado(min(self.largo, s + 1.0))
+        return math.atan2(b[2] - a[2], math.hypot(b[0] - a[0], b[1] - a[1]))
+
 
 class en:
     """with en(tramo, s): coloca temporalmente el cursor en el punto s del tramo (sobre la carretera)."""
@@ -169,16 +175,20 @@ class en:
         self.t, self.s = tramo, s
 
     def __enter__(self):
-        self.guardado = (K.x, K.y, K.z, K.th)
+        self.guardado = (K.x, K.y, K.z, K.th, K.pend)
         K.x, K.y, K.z, K.th = self.t.estado(self.s)
+        K.pend = self.t.pendiente(self.s)
         return K
 
     def __exit__(self, *exc):
-        K.x, K.y, K.z, K.th = self.guardado
+        K.x, K.y, K.z, K.th, K.pend = self.guardado
 
 
-def carretera(largo, ancho=12.0, dz=0.0, giro_grados=0.0, muros=1.2, mat="gris", mat_muro=None, paso=4.0, grosor=2.0):
-    """Tramo de carretera desde el cursor: largo (m), desnivel total dz, giro total (curva suave). Devuelve un Tramo."""
+def carretera(largo, ancho=12.0, dz=0.0, giro_grados=0.0, muros=1.2, mat="gris", mat_muro=None, paso=4.0, grosor=2.0,
+              muro_izq=None, muro_der=None):
+    """Tramo de carretera desde el cursor: largo (m), desnivel total dz, giro total (curva suave). Devuelve un Tramo.
+    muro_izq / muro_der (altura en m) permiten un muro distinto por lado; izquierda = lado +, derecha = lado −."""
+    alturas_muro = {ancho / 2: muros if muro_izq is None else muro_izq, -ancho / 2: muros if muro_der is None else muro_der}
     n = max(1, int(math.ceil(largo / paso)))
     giro = math.radians(giro_grados)
     secciones = []
@@ -201,14 +211,13 @@ def carretera(largo, ancho=12.0, dz=0.0, giro_grados=0.0, muros=1.2, mat="gris",
         SOLIDO.quad(db, cb, bb, ab, mat)                                             # fondo
         SOLIDO.quad(ab, bb, b, a, mat)                                               # lateral izq.
         SOLIDO.quad(c, cb, db, d, mat)                                               # lateral der.
-        if muros:
-            for lado in (-ancho / 2, ancho / 2):
-                p0, p1 = borde(x0, y0, z0, t0, lado, 0), borde(x1, y1, z1, t1, lado, 0)
-                q0, q1 = borde(x0, y0, z0, t0, lado, muros), borde(x1, y1, z1, t1, lado, muros)
-                if lado < 0:
-                    SOLIDO.quad(p0, p1, q1, q0, mm)
-                else:
-                    SOLIDO.quad(p1, p0, q0, q1, mm)
+        for lado, alto_muro in alturas_muro.items():
+            if not alto_muro:
+                continue
+            p0, p1 = borde(x0, y0, z0, t0, lado, 0), borde(x1, y1, z1, t1, lado, 0)
+            q0, q1 = borde(x0, y0, z0, t0, lado, alto_muro), borde(x1, y1, z1, t1, lado, alto_muro)
+            SOLIDO.quad(p0, p1, q1, q0, mm)          # dos caras: se ve y colisiona desde ambos lados
+            SOLIDO.quad(p1, p0, q0, q1, mm)
     MIN_Z[0] = min(MIN_Z[0], min(sec[2] for sec in secciones) - grosor)
     return Tramo(secciones)
 
@@ -241,6 +250,16 @@ def a_juego(p):
 def q_yaw(th_extra=0.0):
     phi = math.pi / 2 + K.th + th_extra
     return (math.cos(phi / 2), 0.0, math.sin(phi / 2), 0.0)   # w, x, y, z
+
+
+def q_superficie(th_extra=0.0):
+    """Giro horizontal + inclinación del suelo en el cursor (K.pend), para objetos apoyados en pendientes.
+    q = q_Y(yaw) * q_X(alfa): el eje Z local (frente del objeto) pasa a tener componente vertical -sin(alfa).
+    Con el frente hacia adelante alfa = -pendiente; con el objeto girado 180° (th_extra = pi), alfa = +pendiente."""
+    phi = math.pi / 2 + K.th + th_extra
+    alfa = -K.pend * math.cos(th_extra)
+    c1, s1, c2, s2 = math.cos(phi / 2), math.sin(phi / 2), math.cos(alfa / 2), math.sin(alfa / 2)
+    return (c1 * c2, c1 * s2, s1 * c2, -s1 * s2)
 
 
 def xyz(tag, p):
@@ -279,16 +298,16 @@ def dash_panel(adelante, lado=0.0, velocidad=100):
     obj("DashPanel", "<GroundOffset>0</GroundOffset><IsCastShadow>true</IsCastShadow><IsChangeCameraWhenChangePath>false</IsChangeCameraWhenChangePath>"
         "<IsChangePath>false</IsChangePath><IsConstantStartVelocity>true</IsConstantStartVelocity><IsInvisible>false</IsInvisible>"
         f"<IsTo3D>false</IsTo3D><IsUseDelayCamera>true</IsUseDelayCamera><OutOfControl>0.5</OutOfControl><Range>100</Range>"
-        f"<Speed>{velocidad}</Speed><SpeedMax>60</SpeedMax><SpeedMin>30</SpeedMin>", adelante, lado, 0.0)
+        f"<Speed>{velocidad}</Speed><SpeedMax>60</SpeedMax><SpeedMin>30</SpeedMin>", adelante, lado, 0.0, q=q_superficie())
 
 
-def resorte_vertical(adelante, lado=0.0, arriba=0.0, velocidad=30, a_3d=False):
+def resorte_vertical(adelante, lado=0.0, arriba=0.0, velocidad=30, a_3d=False, mantener=5):
     obj("Spring", "<AimDirection>0</AimDirection><BaseRotation>0</BaseRotation><DebugShotTimeLength>2</DebugShotTimeLength>"
         f"<FirstSpeed>{velocidad}</FirstSpeed><GroundOffset>0</GroundOffset><IsBreak>false</IsBreak><IsCastShadow>true</IsCastShadow>"
         "<IsChangeCameraWhenPathChange>true</IsChangeCameraWhenPathChange><IsHomingAttackEnable>false</IsHomingAttackEnable>"
         "<IsLongBase>false</IsLongBase><IsPathChange>false</IsPathChange><IsSideSet>false</IsSideSet>"
         "<IsStartVelocityConstant>true</IsStartVelocityConstant><IsWallWalk>false</IsWallWalk><IsWithBase>false</IsWithBase>"
-        "<IsYawUpdate>false</IsYawUpdate><KeepVelocityDistance>5</KeepVelocityDistance><MotionType>0</MotionType>"
+        f"<IsYawUpdate>false</IsYawUpdate><KeepVelocityDistance>{mantener}</KeepVelocityDistance><MotionType>0</MotionType>"
         "<OutOfControl>0.4</OutOfControl><Range>60</Range><m_IsConstantFrame>false</m_IsConstantFrame>"
         "<m_IsConstantPosition>true</m_IsConstantPosition><m_IsMonkeyHunting>false</m_IsMonkeyHunting>"
         f"<m_IsStopBoost>false</m_IsStopBoost><m_IsTo3D>{'true' if a_3d else 'false'}</m_IsTo3D>"
@@ -300,7 +319,8 @@ def rampa_salto(adelante, lado=0.0, boost=50, normal=35):
     obj("JumpBoard", "<AngleType>0</AngleType><GroundOffset>0</GroundOffset>"
         f"<ImpulseSpeedOnBoost>{boost}</ImpulseSpeedOnBoost><ImpulseSpeedOnNormal>{normal}</ImpulseSpeedOnNormal>"
         "<IsCastShadow>false</IsCastShadow><IsTo3D>false</IsTo3D><LookBack>false</LookBack><OutOfControl>1.5</OutOfControl>"
-        "<Range>60</Range><RigidBody>true</RigidBody>", adelante, lado, 0.0)
+        "<Range>60</Range><RigidBody>true</RigidBody>", adelante, lado, 0.0,
+        q=q_superficie(math.pi))      # el frente del JumpBoard es el contrario al del DashPanel (probado en 0.4.0)
 
 
 def grind_dash(pos_blender, velocidad=60):
@@ -352,8 +372,9 @@ def riel_grind(nombre, puntos):
         n = max(1, int(largo / 2))
         for i in range(n):
             t0, t1 = i / n, (i + 1) / n
-            c = (a[0] + dx * (t0 + t1) / 2, a[1] + dy * (t0 + t1) / 2, a[2] + dz * (t0 + t1) / 2 - 0.15)
-            SOLO_VISUAL.caja(c, (largo / n + 0.05, 0.25, 0.25), math.atan2(dy, dx), "costura")
+            # barra fina con la cara superior 0,10 m bajo la spline (Sonic apoya los pies en la spline)
+            c = (a[0] + dx * (t0 + t1) / 2, a[1] + dy * (t0 + t1) / 2, a[2] + dz * (t0 + t1) / 2 - 0.25)
+            SOLO_VISUAL.caja(c, (largo / n + 0.05, 0.15, 0.15), math.atan2(dy, dx), "costura")
 
 
 # ==============================================================================================
@@ -368,24 +389,24 @@ anillos(10, 30, tramo=t)
 for i, s in enumerate((10, 22, 34)):                         # tuberías de Chemical Plant reventando la colina
     with en(t, s):
         decorado(0, 13 + i, -2, (5, 5, 9 + 3 * i), "cpz", 20 * i)
-with en(t, 36):
+with en(t, 6):                                               # panel solo en la recta inicial, lejos de la curva
     dash_panel(0)
-t = carretera(70, ancho=14, giro_grados=-45, dz=-8, mat="ghz", mat_muro="cpz")
-with en(t, 35):
+# curva a la derecha más abierta (110 m) y con muro exterior (izquierdo) de 3 m para no salirse
+t = carretera(110, ancho=14, giro_grados=-45, dz=-8, mat="ghz", mat_muro="cpz", muro_izq=3.0)
+with en(t, 55):
     decorado(0, 15, -4, (8, 8, 14), "cpz", 30)
-with en(t, 50):
+with en(t, 80):
     decorado(0, -16, -4, (6, 6, 20), "sph")                  # torre nocturna de Speed Highway al otro lado
-anillos(10, 60, cada=5, tramo=t)
+anillos(10, 100, cada=5, tramo=t)
 t = carretera(30, ancho=14, mat="ghz")
-with en(t, 5):
-    dash_panel(0)
-with en(t, 25):                                              # arco de "costura" morada sobre la pista
+with en(t, 10):                                              # arco de "costura" morada sobre la pista
     decorado(0, 0, 6, (2, 14, 1), "costura")
     decorado(0, -7.5, 0, (2, 1, 6), "costura")
     decorado(0, 7.5, 0, (2, 1, 6), "costura")
-# tramo 2D: plataformas sobre tuberías y Mega Mack (la primera plataforma empieza donde acaba la carretera)
-a_2d(2)
-curva_recta("s1_2d@SV", -5, 95, rieles=(-1.0, 1.0))
+# tramo 2D: plataformas sobre tuberías y Mega Mack (la primera plataforma empieza donde acaba la carretera).
+# El cambio a 2D va 12 m antes del final de la carretera (21 m antes del primer hueco), sobre suelo firme.
+a_2d(-12)
+curva_recta("s1_2d@SV", -17, 100, rieles=(-1.0, 1.0))
 suelo_muerte(0, 90)
 alturas = (0, 1.5, 3.0, 1.0, 2.5, 0)
 x2d = 0.0
@@ -400,7 +421,7 @@ for i, h in enumerate(alturas):
         x2d += largo + 5.0
 x2d += 12.0                                                  # fin de la última plataforma
 K.avanzar(x2d)
-a_2d(-3, salida=True)
+a_2d(8, salida=True)                                         # vuelta a 3D ya sobre la carretera, 20 m después del último hueco
 carretera(30, ancho=14, mat="ghz")
 
 # --- 2. Calle sobre las ruinas: City Escape + Sky Sanctuary (+ Egg Fighters de Rooftop Run en la v1) ---
@@ -419,8 +440,8 @@ for s in (40, 110, 180):                                     # columnas de ruina
     with en(t, s):
         decorado(0, -11, -20, (4, 4, 30), "ssz")
         decorado(8, 11, -20, (4, 4, 34), "ssz")
-with en(t, 196):
-    a_quickstep(0, salida=True)
+with en(t, 180):
+    a_quickstep(0, salida=True)                              # fin del quickstep 20 m antes del borde
 with en(t, 186):
     dash_panel(0)
 with en(t, 197):
@@ -437,22 +458,24 @@ for i in range(3):
 carretera(25, ancho=14, mat="ssz")
 
 # --- 3. Mar en llamas: Seaside Hill + lava de Crisis City + tornado ----------------------------------
-t = carretera(160, ancho=34, giro_grados=35, mat="ssh", mat_muro="ssh", muros=0.6)
-for s, lado in ((20, -6), (45, 8), (70, -3), (95, 10), (120, -8)):           # manchas de lava (decorado bajo)
+# curva a la izquierda sin paneles y con muro exterior (derecho) de 3 m; después, recta con panel y rampa
+t = carretera(130, ancho=34, giro_grados=35, mat="ssh", mat_muro="ssh", muros=0.6, muro_der=3.0)
+for s, lado in ((20, -6), (45, 8), (70, -3), (95, 10), (118, -8)):           # manchas de lava (decorado bajo)
     with en(t, s):
         decorado(0, lado, 0, (10, 7, 0.15), "csc")
-for s, lado in ((35, 13), (85, -14), (130, 12)):                             # pilares de las ruinas
+for s, lado in ((35, 13), (85, -14), (120, 12)):                             # pilares de las ruinas
     with en(t, s):
         decorado(0, lado, 0, (3, 3, 10), "ssh")
-with en(t, 140):
-    decorado(0, -30, -10, (12, 12, 60), "csc", 15)                          # "tornado" de Crisis City (columna)
-with en(t, 100):
+with en(t, 110):
+    decorado(0, -34, -10, (12, 12, 60), "csc", 15)                          # "tornado" de Crisis City (columna)
+with en(t, 80):
     decorado(0, 30, -10, (6, 6, 25), "ghz")                                 # puente de Green Hill arrastrado
-anillos(10, 140, cada=6, tramo=t)
-for s in (60, 110, 146):
-    with en(t, s):
-        dash_panel(0)
-with en(t, 158):
+anillos(10, 125, cada=6, tramo=t)
+t = carretera(50, ancho=34, mat="ssh", muros=0.6)                           # recta final: panel y rampa alineados
+anillos(5, 30, cada=5, tramo=t)
+with en(t, 32):
+    dash_panel(0)
+with en(t, 47):
     rampa_salto(0, boost=55, normal=40)
 suelo_muerte(0, 40, ancho=50, profundidad=20)
 K.avanzar(28)
@@ -463,7 +486,7 @@ plataforma(0, 0, 0, 34, 10, alto=2, mat="euc")                            # suel
 decorado(-15, -12, 0, (30, 2, 45), "euc")                                 # paredes de la torre
 decorado(-15, 12, 0, (30, 2, 45), "euc")
 a_2d(-8)
-curva_recta("s4_2d@SV", -12, 40, rieles=(-1.0, 1.0))
+curva_recta("s4_2d@SV", -12, 50, rieles=(-1.0, 1.0))
 # escalera hacia adelante: cada resorte queda fuera de la proyección de la plataforma siguiente
 resorte_vertical(-4, 0, 0, velocidad=26)
 escalones = [(0, 6, 8), (6, 12, 8), (12, 18, 8), (18, 24, 14)]           # (inicio, altura, largo)
@@ -471,9 +494,10 @@ for i, (ini, h, largo) in enumerate(escalones):
     plataforma(ini, 0, h, largo, 6, alto=1.2, mat="pla" if i % 2 == 0 else "cpz")
     anillos(ini + 1, ini + largo - 1, cada=2.0, arriba=h + 1.0)
     if i < len(escalones) - 1:
-        resorte_vertical(ini + 2, 0, h, velocidad=26)
+        ultimo = i == len(escalones) - 2
+        resorte_vertical(ini + 2, 0, h, velocidad=32 if ultimo else 26, mantener=7 if ultimo else 5)
 decorado(26, 0, 31, (6, 6, 1.5), "pla")                                   # "prensa" de Planet Wisp sobre la salida
-a_2d(28, salida=True, arriba=24)                                          # salida a 3D arriba de la escalera
+a_2d(40, salida=True, arriba=24)                                          # salida a 3D ya en la carretera de arriba (8 m dentro)
 K.avanzar(32)
 K.z += 24
 
@@ -490,7 +514,7 @@ for s in (30, 80, 125):                                                   # refl
 with en(t, 110):
     decorado(0, 20, -60, (14, 6, 50), "ghz")                              # cascada de Green Hill al costado
 carretera(35, ancho=14, mat="ghz")
-resorte_vertical(-5, 0, 0, velocidad=30)
+resorte_vertical(-3, 0, 0, velocidad=42, mantener=8)                      # en 0.4.0 con 30 se quedaba ~30 % corto
 plataforma(0, 0, 8, 30, 14, alto=8, mat="sph")                            # escalón de 8 m (subir con el resorte)
 K.avanzar(30)
 K.z += 8
@@ -517,11 +541,14 @@ grind_dash(tuple(a + (b - a) * 0.1 for a, b in zip(p0, p1)))   # panel de grind 
 suelo_muerte(4, 85, ancho=40, profundidad=25)
 K.avanzar(88)
 K.z -= 8.35
-carretera(30, ancho=14, mat="euc")
+carretera(60, ancho=14, mat="euc")                      # tejado largo y sin paneles: Sonic frena al salir del riel
 
 # --- 7. Caída de las 9 eras: pozo con forma de reloj de 9 horas -----------------------------------------
+# La entrada es un agujero en el suelo: una explanada (anillo) rodea la boca del pozo, y un ChangeDiveBegin
+# horizontal en la boca activa el planeo (parámetros copiados de Chemical Plant / Speed Highway).
 carretera(12, ancho=14, mat="costura", muros=0)
-centro = K.frame(16, 0, 0)
+R_BOCA, R_EXPLANADA = 13.0, 26.0
+centro = K.frame(R_EXPLANADA, 0, 0)
 PROF = 110
 fondo_z = centro[2] - PROF
 ang_entrada = K.th + math.pi
@@ -532,13 +559,23 @@ def dif_ang(a, b):
     return abs((a - b + math.pi) % (2 * math.pi) - math.pi)
 
 
+SEG = 24                                                # explanada: anillo entre la boca y el borde exterior
+for k in range(SEG):
+    a0, a1 = 2 * math.pi * k / SEG, 2 * math.pi * (k + 1) / SEG
+
+    def pt(r, a, dz=0.0):
+        return (centro[0] + r * math.cos(a), centro[1] + r * math.sin(a), centro[2] + dz)
+    SOLIDO.quad(pt(R_BOCA, a0), pt(R_EXPLANADA, a0), pt(R_EXPLANADA, a1), pt(R_BOCA, a1), "costura")            # suelo
+    SOLIDO.quad(pt(R_BOCA, a1, -2), pt(R_EXPLANADA, a1, -2), pt(R_EXPLANADA, a0, -2), pt(R_BOCA, a0, -2), "costura")  # fondo
+    SOLIDO.quad(pt(R_BOCA, a0, -2), pt(R_BOCA, a0), pt(R_BOCA, a1), pt(R_BOCA, a1, -2), "costura")              # canto interior
+    SOLIDO.quad(pt(R_EXPLANADA, a1, -2), pt(R_EXPLANADA, a1), pt(R_EXPLANADA, a0), pt(R_EXPLANADA, a0, -2), "costura")
 for i, zona in enumerate(ZONAS):
     ang = 2 * math.pi * i / 9
     cx, cy = centro[0] + 16 * math.cos(ang), centro[1] + 16 * math.sin(ang)
     base = fondo_z
-    tope = centro[2] + 14                               # paredes altas: frenan a Sonic si salta de más
-    if dif_ang(ang, ang_entrada) < math.radians(25):
-        tope = centro[2] - 3                            # la "hora" de la entrada es baja: se entra por encima
+    tope = centro[2] + 12                               # las "horas" sobresalen 12 m: frenan a Sonic si cruza volando
+    if dif_ang(ang, ang_entrada) < math.radians(50):
+        tope = centro[2] - 2                            # del lado de la entrada quedan bajo la explanada
     if dif_ang(ang, ang_salida) < math.radians(25):
         base = fondo_z + 9                              # la de la salida deja un túnel abajo
     SOLIDO.caja((cx, cy, base), (4, 11, tope - base), ang, zona)
@@ -546,6 +583,15 @@ for i, zona in enumerate(ZONAS):
         r = 11 - k * 1.5
         SOLIDO.caja((centro[0] + r * math.cos(ang + 0.3), centro[1] + r * math.sin(ang + 0.3), centro[2] - 25 - 30 * k - i * 2),
                     (2.5, 2.5, 1.5), ang, zona)
+CAMPOS_DIVE ="<DefaultStatus>0</DefaultStatus><GroundOffset>0</GroundOffset><IsCastShadow>false</IsCastShadow><Shape_Type>0</Shape_Type>"
+Q_HORIZONTAL = (0.707107, 0.707107, 0.0, 0.0)           # caja tumbada, como en Chemical Plant
+obj("ChangeDiveBegin", f"<Collision_Height>{2 * R_BOCA:g}</Collision_Height><Collision_Length>2</Collision_Length>"
+    f"<Collision_Width>{2 * R_BOCA:g}</Collision_Width>{CAMPOS_DIVE}<Range>300</Range>"
+    f"<m_DebugCylinderHeight>{PROF}</m_DebugCylinderHeight><m_Range>9</m_Range>",
+    pos=(centro[0], centro[1], centro[2] - 4), q=Q_HORIZONTAL)
+obj("ChangeDiveEndNoEvent", "<Collision_Height>30</Collision_Height><Collision_Length>3</Collision_Length>"
+    f"<Collision_Width>30</Collision_Width>{CAMPOS_DIVE}<Range>100</Range>",
+    pos=(centro[0], centro[1], fondo_z + 15), q=Q_HORIZONTAL)
 for k in range(12):                                     # anillos en la caída
     obj("Ring", CAMPOS_RING, pos=(centro[0], centro[1], centro[2] - 10 - 8 * k))
 SOLIDO.caja((centro[0], centro[1], fondo_z - 2), (44, 44, 2), K.th, "blanco")   # suelo blanco al fondo
@@ -563,7 +609,7 @@ anillos(-80, -45, cada=5, lado=4)
 decorado(30, 0, 25, (4, 30, 30), "costura")                               # el "ojo" del Time Eater en el cielo
 obj("GoalRing", "<GroundOffset>0</GroundOffset><IsCastShadow>true</IsCastShadow><IsMessageOn>false</IsMessageOn><Radius>4</Radius>"
     f"<Range>200</Range>{xyz('ResultPosition', a_juego(K.frame(-20, 0, 0)))}<SENumber>6</SENumber>",
-    -20, 0, 1.5, q=(0.707107, 0.707107, 0.0, 0.0))
+    -20, 0, 2.5, q=q_yaw())           # en las 9 zonas el GoalRing solo lleva giro horizontal (vertical por defecto)
 FINAL = K.frame(0, 0, 0)
 
 # ==============================================================================================
