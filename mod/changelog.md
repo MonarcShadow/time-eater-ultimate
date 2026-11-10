@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+- El planeo termina más abajo, a unos 10 m del suelo.
+- Segunda rampa con el mismo impulso con y sin boost (antes con boost se pasaba del resorte).
+- Aro de impulso de prueba girado: ahora debe lanzar hacia la meta.
+
 ## 0.5.0
 Grieta del Tiempo, fase B: las 8 secciones con más forma.
 - **Cielo**: el de Perfect Chaos en lugar del fondo negro.

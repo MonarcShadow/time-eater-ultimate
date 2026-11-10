@@ -396,6 +396,14 @@ def rampa_salto(adelante, lado=0.0, boost=50, normal=35, angulo=0):
         q=q_superficie(math.pi))      # el frente del JumpBoard es el contrario al del DashPanel (probado en 0.4.0)
 
 
+def aro_impulso(adelante, lado=0.0, arriba=1.6, velocidad=25):
+    """DashRing. Su frente es -Z local, como el JumpBoard (probado en 0.5.0: con el giro del DashPanel lanzaba hacia atrás)."""
+    obj("DashRing", f"<FirstSpeed>{velocidad}</FirstSpeed><GroundOffset>0</GroundOffset><IsCastShadow>true</IsCastShadow>"
+        "<IsChangeCameraWhenChangePath>false</IsChangeCameraWhenChangePath><IsChangePath>false</IsChangePath>"
+        "<IsHeadToVelocity>false</IsHeadToVelocity><IsTo3D>false</IsTo3D><KeepVelocityDistance>5</KeepVelocityDistance>"
+        "<OutOfControl>0.5</OutOfControl><Range>60</Range>", adelante, lado, arriba, q=q_yaw(math.pi))
+
+
 def grind_dash(pos_blender, velocidad=60):
     obj("GrindDashPanel", "<GroundOffset>0</GroundOffset><IsCastShadow>true</IsCastShadow><IsFront>true</IsFront>"
         f"<IsStartVelocityConstant>true</IsStartVelocityConstant><OutOfControl>2.5</OutOfControl><Range>100</Range><Speed>{velocidad}</Speed>",
@@ -579,7 +587,7 @@ anillos(5, 30, cada=5, tramo=t)
 with en(t, 32):
     dash_panel(0)
 with en(t, 47):
-    rampa_salto(0, boost=70, normal=60)                                     # en 0.4.1 (55/40) faltaba impulso
+    rampa_salto(0, boost=60, normal=60)                                     # 60 queda perfecto; con 70 (boost) se pasaba del resorte
 suelo_muerte(0, 40, ancho=50, profundidad=20)
 K.avanzar(28)
 
@@ -720,7 +728,7 @@ obj("ChangeDiveBegin", f"<Collision_Height>{2 * R_BOCA:g}</Collision_Height><Col
     pos=(centro[0], centro[1], centro[2] - 4), q=Q_HORIZONTAL)
 obj("ChangeDiveEndNoEvent", "<Collision_Height>30</Collision_Height><Collision_Length>3</Collision_Length>"
     f"<Collision_Width>30</Collision_Width>{CAMPOS_DIVE}<Range>100</Range>",
-    pos=(centro[0], centro[1], fondo_z + 15), q=Q_HORIZONTAL)
+    pos=(centro[0], centro[1], fondo_z + 8.5), q=Q_HORIZONTAL)     # caja de 3 m de grosor: el planeo acaba a ~10 m del suelo
 for k in range(24):                                     # anillos en espiral: guían el planeo alrededor de los escombros
     a_esp = k * 0.7
     obj("Ring", CAMPOS_RING, pos=(centro[0] + 4.5 * math.cos(a_esp), centro[1] + 4.5 * math.sin(a_esp), centro[2] - 10 - 3.6 * k))
@@ -740,10 +748,7 @@ riel_grind("s8_aguja@GR", [K.frame(-80, -6, 0.35), K.frame(-38, -6, 0.35)])  # l
 tubo((-38, -6, 0.1), (-34, -6, 0.1), 0.5, "costura", solido=False, n=6)   # punta de la aguja
 anillos(-80, -45, cada=5, lado=5)
 # prueba de orientación de un objeto nuevo (DashRing) en un sitio inofensivo: debería lanzar hacia la meta
-obj("DashRing", "<FirstSpeed>25</FirstSpeed><GroundOffset>0</GroundOffset><IsCastShadow>true</IsCastShadow>"
-    "<IsChangeCameraWhenChangePath>false</IsChangeCameraWhenChangePath><IsChangePath>false</IsChangePath>"
-    "<IsHeadToVelocity>false</IsHeadToVelocity><IsTo3D>false</IsTo3D><KeepVelocityDistance>5</KeepVelocityDistance>"
-    "<OutOfControl>0.5</OutOfControl><Range>60</Range>", -38, 5, 1.6)
+aro_impulso(-38, 5)
 adelante_v = (math.cos(K.th), math.sin(K.th), 0.0)                        # el ojo del Time Eater: disco morado con pupila blanca
 SOLIDO.disco(K.frame(34, 0, 22), 16, adelante_v, "costura", n=20, grosor=2)
 SOLO_VISUAL.disco(K.frame(32.6, 0, 22), 6, adelante_v, "blanco", n=16, grosor=0.4)
