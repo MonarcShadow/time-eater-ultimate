@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1
+- **Grieta del Tiempo:** arreglado el fallo por el que, a partir de la sección 7, los objetos dejaban de funcionar (anillos, paneles, checkpoints) y no se podía terminar el nivel. El nivel salía del "mundo" de física del juego; ahora el escenario declara un mundo que lo cubre entero, como hace el escenario del Time Eater.
+- **Taker** (Crisis City) un poco más alto: ya no queda medio hundido en el suelo (en Grieta y en el laboratorio).
+
 ## 0.7.0
 **Grieta del Tiempo alargada a unos 5 minutos** (estimación: ~330 s, ~8,9 km; antes ~1,5 km y menos de 60 s). Pasa de 8 a 14 secciones:
 1. Colina contaminada: más colinas, islotes y un 2D más largo.

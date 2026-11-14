@@ -7,6 +7,7 @@ import importlib.util
 import json
 import math
 import os
+import re
 import sys
 
 import bpy
@@ -118,6 +119,19 @@ with open(os.path.join(dir_xml, "setdata_base.set.xml"), "w", encoding="utf-8") 
     f.write('<?xml version="1.0" encoding="utf-8" standalone="no" ?>\n<SetObject>\n' + "\n".join(OBJETOS) + "\n</SetObject>\n")
 inicio_j = a_juego(INICIO)
 dead = math.floor(MIN_Z[0] - 40)
+
+# Mundo de Havok: si Sonic o los objetos salen de él, la física se detiene (anillos, paneles y checkpoints dejan de
+# funcionar: el "Ghost Mode" que describe el Unleashed Project; nos pasó en la 0.7.0 a ~4 km del origen).
+# Se declara como en el Stage.stg.xml del Time Eater (#blb: ±5000), cubriendo todo el nivel con margen.
+pts_j = [a_juego(v) for m in (SOLIDO, SOLO_VISUAL, MUERTE) for v in m.v]
+for linea in OBJETOS:
+    mpos = re.search(r"<Position><x>([^<]*)</x><y>([^<]*)</y><z>([^<]*)</z></Position>", linea)
+    if mpos:
+        pts_j.append(tuple(float(c) for c in mpos.groups()))
+MARGEN = 1000
+mundo_min = [min(p[i] for p in pts_j) - MARGEN for i in range(3)]
+mundo_max = [max(p[i] for p in pts_j) + MARGEN for i in range(3)]
+mundo_min[1] = min(mundo_min[1], dead - 200)
 quicksteps = "".join(f"""
     <SingleForward>
       <Name>{n}</Name>
@@ -139,6 +153,10 @@ with open(os.path.join(dir_xml, "Stage.stg.xml"), "w", encoding="utf-8") as f:
     <DeadHeight>{dead}</DeadHeight>
     <CameraView>Forward</CameraView>
   </Sonic>
+  <World>
+    {xyz('Min', [math.floor(c) for c in mundo_min])}
+    {xyz('Max', [math.ceil(c) for c in mundo_max])}
+  </World>
   <BGM>
     <IsStream>true</IsStream>
     <Container>{cfg.get("bgm_container", "SNG15_BPC")}</Container>
@@ -154,5 +172,5 @@ with open(os.path.join(dir_xml, "Stage.stg.xml"), "w", encoding="utf-8") as f:
 """)
 
 print(f"TEU_RESUMEN objetos={len(OBJETOS)} caras={len(SOLIDO.f)} splines={len(CURVAS)} deadheight={dead} "
-      f"checkpoints={base.PM_ID[0]} final=({FINAL[0]:.0f},{FINAL[1]:.0f},{FINAL[2]:.0f})")
+      f"checkpoints={base.PM_ID[0]} mundo=({mundo_min[0]:.0f},{mundo_min[1]:.0f},{mundo_min[2]:.0f})-({mundo_max[0]:.0f},{mundo_max[1]:.0f},{mundo_max[2]:.0f}) final=({FINAL[0]:.0f},{FINAL[1]:.0f},{FINAL[2]:.0f})")
 print("TEU_ESCENA_OK", salida)

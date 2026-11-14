@@ -488,7 +488,7 @@ ENEMIGOS = {
     "sph": ("EnemySpinner", 2.5, ["EnemySpinner"]),
     "cte": ("EnemyGunHunter3D", 0.0, ["EnemyGunHunter"]),
     "ssh": ("EnemyPawnLance3D", 0.0, ["EnemyEPawnCommon", "EnemyEPawnSSH"]),
-    "csc": ("EnemyTaker3D", 0.0, ["EnemyTaker"]),
+    "csc": ("EnemyTaker3D", 2.0, ["EnemyTaker"]),       # en Crisis City vuelan; a 0 m quedaba medio hundido (0.7.0)
     "euc": ("EnemyEFighter3D", 0.0, ["EnemyEFighter"]),
     "pla": ("EnemyPawnPla3D", 0.0, ["EnemyEPawnCommon", "EnemyEPawnPLA"]),
 }
