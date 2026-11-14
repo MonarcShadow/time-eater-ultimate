@@ -7,7 +7,7 @@
   "cielo": { "modelos": ["bsd_sky0", "bsd_sky1"] },
   "archivos_base": ["SceneEffect.prm.xml", "Terrain.prm.xml", "BossRivalSetting.prm.xml"],
   "enemigos": ["EnemyEFighter"],
-  "archivos_extra": ["ssz_cmn"],
+  "archivos_extra": ["ssz_cmn", "SonicSsz"],
   "escena": {
     "largo": 170,
     "ancho": 18,

@@ -706,6 +706,11 @@ K.z -= 8.35
 carretera(60, ancho=14, mat="euc")                      # tejado largo y sin paneles: Sonic frena al salir del riel
 
 # --- 7. Caída de las 9 eras: pozo con forma de reloj de 9 horas -----------------------------------------
+# GIRO DE LA CÁMARA DE PLANEO (grados, visto desde arriba), sumado a la dirección del nivel.
+# 0 = la estimación de la 0.6.1 (quedaba girada ~135° respecto a la cámara del riel).
+# Ajustar a mano, reconstruir (scripts\construir_nivel.ps1 -Nivel grieta_del_tiempo) y probar (PROBAR_EN_JUEGO.bat).
+# Si al cambiarlo queda peor, probar el valor con el signo contrario (p. ej. -135).
+GIRO_CAMARA_PLANEO = 135
 # La entrada es un agujero en el suelo: una explanada (anillo) rodea la boca del pozo, y un ChangeDiveBegin
 # horizontal en la boca activa el planeo (parámetros copiados de Chemical Plant / Speed Highway).
 carretera(12, ancho=14, mat="costura", muros=0)
@@ -764,10 +769,10 @@ id_cam = obj("ObjCameraParallel", "<Distance>10</Distance><Ease_Time_Enter>0</Ea
              "<Pitch>85</Pitch><Range>100000</Range><Target><SetObjectID>0</SetObjectID></Target>"
              "<TargetOffset_Front>0</TargetOffset_Front><TargetOffset_Right>0</TargetOffset_Right><TargetOffset_Up>0</TargetOffset_Up>"
              "<TargetOffset_Vel>0</TargetOffset_Vel><TargetPositionFix><x>0</x><y>0</y><z>0</z></TargetPositionFix><Target_Type>0</Target_Type>"
-             f"<VelOffsetXYZ>0</VelOffsetXYZ><Yaw>{math.degrees(math.pi / 2 + K.th):.1f}</Yaw><ZRot>0</ZRot>",
+             f"<VelOffsetXYZ>0</VelOffsetXYZ><Yaw>{(math.degrees(math.pi / 2 + K.th) + GIRO_CAMARA_PLANEO + 180) % 360 - 180:.1f}</Yaw><ZRot>0</ZRot>",
              pos=(centro[0], centro[1], centro[2]), q=(1.0, 0.0, 0.0, 0.0))
 obj("ChangeVolumeCamera", f"<Collision_Height>{alto_vol:g}</Collision_Height><Collision_Length>28</Collision_Length>"
-    "<Collision_Width>28</Collision_Width><DefaultStatus>0</DefaultStatus><Ease_Time_Enter>1</Ease_Time_Enter>"
+    "<Collision_Width>28</Collision_Width><DefaultStatus>0</DefaultStatus><Ease_Time_Enter>2</Ease_Time_Enter>"
     "<Ease_Time_Leave>1.1</Ease_Time_Leave><GroundOffset>0</GroundOffset><IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow>"
     "<IsEnableCollision>false</IsEnableCollision><LineType>0</LineType><PositionList /><Priority>0</Priority><Range>300</Range>"
     f"<Shape_Type>0</Shape_Type><Target><SetObjectID>{id_cam}</SetObjectID></Target>",

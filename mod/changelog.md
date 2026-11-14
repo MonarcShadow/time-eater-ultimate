@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.2
+- **Laboratorio:** arreglado el cierre del juego al saltar en la nube de Sky Sanctuary (faltaba cargar las animaciones de Sonic de esa zona, `SonicSsz`).
+- **Grieta del Tiempo:** cámara de planeo girada 135° para mirar hacia la salida del pozo, y transición más suave (2 s).
+
 ## 0.6.1
 - **Grieta del Tiempo:** cámara de planeo que mira desde arriba durante la caída, para ver los escombros.
 - **Grieta del Tiempo:** cuatro Egg Fighters de Rooftop Run en la sección 2 (dos antes de la calle y dos al aterrizar de las islas).
