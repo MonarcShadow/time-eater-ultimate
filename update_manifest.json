@@ -1,0 +1,118 @@
+{
+    "manifestVersion":  1,
+    "modVersion":  "0.7.1",
+    "basePath":  "https://raw.githubusercontent.com/MonarcShadow/time-eater-ultimate/hmm-update/",
+    "changelogPath":  "https://raw.githubusercontent.com/MonarcShadow/time-eater-ultimate/hmm-update/changelog.md",
+    "files":  [
+                  {
+                      "path":  "changelog.md",
+                      "sha256":  "681e75a3e68a889151b92eb8ed51dfb3c984b3c6069c819c5ca59f059f4fbe0a",
+                      "size":  7760
+                  },
+                  {
+                      "path":  "disk/bb/#bde.ar.00",
+                      "sha256":  "a198117527098fb0c9b3639e5d79bcf865cffd51878f4ddad5726504d9866c69",
+                      "size":  72912
+                  },
+                  {
+                      "path":  "disk/bb/#bde.arl",
+                      "sha256":  "eefc7d099382c10419e04b5458e09e4de8f613caf7cdc1beb14f86cb79483b4d",
+                      "size":  214
+                  },
+                  {
+                      "path":  "disk/bb/#bpc.ar.00",
+                      "sha256":  "13a1cdaeb16ee7ddf7ecc3410387ca21fe96d3ba385a3580bf5b57c8ed02f17d",
+                      "size":  2094672
+                  },
+                  {
+                      "path":  "disk/bb/#bpc.arl",
+                      "sha256":  "d085b1423753c4b31ae1fb1d6a99165b406b3a182a8f7671d34db999e58c6268",
+                      "size":  169
+                  },
+                  {
+                      "path":  "disk/bb/Packed/bde/bde.ar.00",
+                      "sha256":  "66a2c54cff4730823891171d09b9628a5bf068d6d4d57831140cedc663883f9c",
+                      "size":  89612
+                  },
+                  {
+                      "path":  "disk/bb/Packed/bde/bde.arl",
+                      "sha256":  "136cb421d0e9167f29bf1f0cf70f28808a0ec7fbd0144266878dfa50e5eb7e0b",
+                      "size":  211
+                  },
+                  {
+                      "path":  "disk/bb/Packed/bde/Stage.pfd",
+                      "sha256":  "ba62dd1f6a897f9b0b54e9edc95cb8214c0b00aeee279068226b05435a30f716",
+                      "size":  2691
+                  },
+                  {
+                      "path":  "disk/bb/Packed/bde/Stage-Add.pfd",
+                      "sha256":  "81e5bf2ff67fb1d01779ed1ff03bfbbaee1b840484253ab1302f132b81c6517f",
+                      "size":  16
+                  },
+                  {
+                      "path":  "disk/bb/Packed/bpc/bpc.ar.00",
+                      "sha256":  "cecb4db5d89287ac39ce2cc5fcdefd9aa8807f1ad09ee7d3c489df2b4f54c4b3",
+                      "size":  3233356
+                  },
+                  {
+                      "path":  "disk/bb/Packed/bpc/bpc.arl",
+                      "sha256":  "33480aeab9d91fbb16c8d0663c8d9fc084d1ae2015d3b0a9272eb6ac06e2c511",
+                      "size":  908
+                  },
+                  {
+                      "path":  "disk/bb/Packed/bpc/Stage.pfd",
+                      "sha256":  "40eb1e3243b13bb58cbb2bccf361882bccd57112f5312bb6e1b70d16e3c3acea",
+                      "size":  843407
+                  },
+                  {
+                      "path":  "disk/bb/Packed/bpc/Stage-Add.pfd",
+                      "sha256":  "81e5bf2ff67fb1d01779ed1ff03bfbbaee1b840484253ab1302f132b81c6517f",
+                      "size":  16
+                  },
+                  {
+                      "path":  "disk/bb2/#bsd.ar.00",
+                      "sha256":  "07dd0a84078fa76846629e800efb6804e6c6bdedfc74ac646bd7a8a7d59c8543",
+                      "size":  76368
+                  },
+                  {
+                      "path":  "disk/bb2/#bsd.arl",
+                      "sha256":  "7685c6caff2cd7890f21aa48ef973856d1e9d7373ae5f635434aec3a1a995853",
+                      "size":  167
+                  },
+                  {
+                      "path":  "disk/bb2/Packed/bsd/bsd.ar.00",
+                      "sha256":  "53fde541cbcf2984d2df79ba2d322540b6df47981535fae9e20fe256ebfa6dd3",
+                      "size":  2972748
+                  },
+                  {
+                      "path":  "disk/bb2/Packed/bsd/bsd.arl",
+                      "sha256":  "cd449ab6a38442639428d684f9d779c40d709bf44a9e67760ed88fe524ba17a2",
+                      "size":  558
+                  },
+                  {
+                      "path":  "disk/bb2/Packed/bsd/Stage.pfd",
+                      "sha256":  "5265bd3acb38f4cead457363f6c97a0093699551a63a92322d99330795b11204",
+                      "size":  2697
+                  },
+                  {
+                      "path":  "disk/bb2/Packed/bsd/Stage-Add.pfd",
+                      "sha256":  "81e5bf2ff67fb1d01779ed1ff03bfbbaee1b840484253ab1302f132b81c6517f",
+                      "size":  16
+                  },
+                  {
+                      "path":  "disk/bb3/#Application.ar.00",
+                      "sha256":  "09618e5b4f38ecb796be04e1ccc7b8ef28f8b38f4a054eeb02dd5f42c3364f17",
+                      "size":  175711
+                  },
+                  {
+                      "path":  "disk/bb3/#Application.arl",
+                      "sha256":  "b9de931c539f6ec71c97b6df7a0bb5d73c653172b0199b3944dc305a38541093",
+                      "size":  501
+                  },
+                  {
+                      "path":  "mod.ini",
+                      "sha256":  "c40e9736460a8bee46aef2aef38d3548e771bd7fdbb4385293bb7cc893821e51",
+                      "size":  575
+                  }
+              ]
+}
