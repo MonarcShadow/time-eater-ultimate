@@ -6,7 +6,8 @@
   "luz": "Direct01",
   "cielo": { "modelos": ["bsd_sky0", "bsd_sky1"] },
   "archivos_base": ["SceneEffect.prm.xml", "Terrain.prm.xml", "BossRivalSetting.prm.xml"],
-  "enemigos": ["EnemyEFighter"],
+  "enemigos": ["EnemyEFighter", "EnemyMotora", "EnemyLander", "EnemyEggRobo", "EnemySpinner", "EnemyGunHunter",
+               "EnemyEPawnCommon", "EnemyEPawnSSH", "EnemyEPawnPLA", "EnemyTaker"],
   "archivos_extra": ["ssz_cmn", "SonicSsz"],
   "escena": {
     "largo": 170,

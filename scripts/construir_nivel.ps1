@@ -151,8 +151,8 @@ Get-ChildItem $packedFinal -File | ForEach-Object { Copy-Item $_.FullName $modPa
 #    Se parte siempre del árbol original y se aplican los "archivos_extra" de TODOS los niveles de niveles\.
 #    Los enemigos van aparte, en EnemyArchiveTree.xml: <DefAppend><Name>escenario</Name><Archive>EnemyX</Archive>…</DefAppend>
 #    (campo "enemigos" de nivel.json, p. ej. ["EnemyEFighter"]).
-$extras = @{}
-$enemigos = @{}
+$extras = [ordered]@{}
+$enemigos = [ordered]@{}      # ordenado: respeta el orden de nivel.json (EnemyEPawnCommon antes de EnemyEPawnSSH/PLA)
 Get-ChildItem (Join-Path $raiz "niveles") -Recurse -Filter nivel.json | ForEach-Object {
     $c = Get-Content $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
     foreach ($a in @($c.archivos_extra)) { if ($a) { $extras["$a|$($c.slot)"] = @($a, $c.slot) } }
@@ -187,7 +187,8 @@ if ($extras.Count -or $enemigos.Count) {
         $arbolE.Load($rutaEnem)
         foreach ($par in $enemigos.Values) {
             $archivo, $esc = $par
-            if (-not $arbolE.DocumentElement.SelectSingleNode("Node//Node[Name='$archivo'] | Node[Name='$archivo']")) { throw "EnemyArchiveTree.xml no conoce '$archivo'" }
+            # vale si es un nodo del árbol o si alguna zona original ya lo carga en su DefAppend (p. ej. EnemyTaker en csc_cmn)
+            if (-not $arbolE.DocumentElement.SelectSingleNode("Node//Node[Name='$archivo'] | Node[Name='$archivo'] | DefAppend[Archive='$archivo']")) { throw "EnemyArchiveTree.xml no conoce '$archivo'" }
             $def = $arbolE.DocumentElement.SelectSingleNode("DefAppend[Name='$esc']")
             if (-not $def) {
                 $def = $arbolE.CreateElement("DefAppend")

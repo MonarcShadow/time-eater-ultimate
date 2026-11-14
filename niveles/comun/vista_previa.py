@@ -48,10 +48,14 @@ for el in ET.parse(setdata).getroot():
             if not hay_suelo(q):
                 avisos += 1
                 print(f"TEU_AVISO {el.tag} en ({gx:.0f},{gy:.0f},{gz:.0f}): no hay suelo {nombre} (¿precipicio cerca?)")
-    elif el.tag in ("DashPanel", "JumpBoard", "Spring"):
+    elif el.tag in ("DashPanel", "JumpBoard", "Spring", "PointMarker"):
         if not hay_suelo(pos, alto=1.0, alcance=1.6):
             avisos += 1
             print(f"TEU_AVISO {el.tag} en ({gx:.0f},{gy:.0f},{gz:.0f}): no está apoyado en el suelo")
+    elif el.tag.startswith("Enemy") and el.tag not in ("EnemySpinner", "EnemyEggRobo3D"):   # los voladores no se comprueban
+        if not hay_suelo(pos, alto=1.0, alcance=2.5):
+            avisos += 1
+            print(f"TEU_AVISO {el.tag} en ({gx:.0f},{gy:.0f},{gz:.0f}): enemigo sin suelo debajo")
 print(f"TEU_COMPROBACION avisos={avisos}")
 
 COLORES = {"Ring": (1, 0.85, 0), "DashPanel": (0, 0.4, 1), "JumpBoard": (0, 0.4, 1), "Spring": (0, 0.8, 1),
@@ -133,7 +137,7 @@ render("00_cenital")
 cam_data.type = "PERSP"
 cam_data.lens = 24
 n = len(marcas)
-for k, i in enumerate(range(0, n, max(1, n // 8))):
+for k, i in enumerate(range(0, n, max(1, n // int(os.environ.get("TEU_VISTAS", "8"))))):
     p = marcas[i]
     cam.location = p + Vector((-30, 35, 28))
     mirar(cam, p + Vector((25, 0, -5)))

@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.7.0
+**Grieta del Tiempo alargada a unos 5 minutos** (estimación: ~330 s, ~8,9 km; antes ~1,5 km y menos de 60 s). Pasa de 8 a 14 secciones:
+1. Colina contaminada: más colinas, islotes y un 2D más largo.
+2. Calle sobre las ruinas: plaza de ruinas con nubes que rebotan y una avenida de City Escape.
+3. Mar en llamas: pasarela larga sobre el mar (la futura carrera sobre el agua) y costa en llamas.
+4. **Autopista entre nubes** (nueva): Speed Highway sobre Sky Sanctuary, con riel y letreros en 2D.
+5. Fábrica dentro de la torre: nave de Planet Wisp antes de la torre y bajada en 2D después.
+6. **Tanque en la playa** (nueva): puentes rotos de Seaside Hill y un tanque de Chemical Plant (el futuro tramo bajo el agua).
+7. Rascacielos invertido: segunda fachada con quickstep y andamios en 2D.
+8. **Crisis al revés** (nueva): calles de Crisis City con lava y plataformas flotantes.
+9. Persecución desincronizada: el doble de tejados y un segundo riel.
+10. **Jardín de cristal** (nueva): Planet Wisp + Sky Sanctuary, con un 2D largo y un quickstep.
+11. **Dentro del reloj** (nueva): un primer planeo, más corto y en otra dirección.
+12. Caída de las 9 eras (igual).
+13. **Eco del pasado** (nueva): la colina del principio, desteñida y con las curvas al revés.
+14. Blanco: fragmentos en 2D y una avenida final antes de la meta.
+
+Además:
+- **Enemigos de las 9 zonas** (unos 50): Motora, Lander, Egg Robo, Spinner, GunHunter, Pawn de Seaside Hill, Taker, Egg Fighter y Pawn de Planet Wisp.
+- **13 checkpoints**, uno al principio de cada sección.
+- Nubes y plataformas giratorias de Sky Sanctuary como extras opcionales.
+- **Laboratorio:** un enemigo de cada zona nueva, para saber cuál falla si alguno cierra el juego.
+
 ## 0.6.2
 - **Laboratorio:** arreglado el cierre del juego al saltar en la nube de Sky Sanctuary (faltaba cargar las animaciones de Sonic de esa zona, `SonicSsz`).
 - **Grieta del Tiempo:** cámara de planeo girada 135° para mirar hacia la salida del pozo, y transición más suave (2 s).

@@ -1,14 +1,15 @@
 {
   "nombre": "grieta_del_tiempo",
-  "descripcion": "Acto 2 'Grieta del Tiempo' (fase B): las 8 secciones con forma, cielo y costuras, geometría propia (portal de Perfect Chaos)",
+  "descripcion": "Acto 2 'Grieta del Tiempo': 14 secciones (~5 min) que mezclan las 9 zonas, caja gris con enemigos de cada zona (portal de Perfect Chaos)",
   "slot": "bpc",
   "cpk": "bb",
   "luz": "bpc_Direct00",
   "cielo": { "modelos": ["bpc300_sky"] },
   "script": "generar.py",
   "archivos_base": ["SceneEffect.prm.xml", "Terrain.prm.xml"],
-  "archivos_extra": ["SonicDiving"],
-  "enemigos": ["EnemyEFighter"],
+  "archivos_extra": ["SonicDiving", "ssz_cmn", "SonicSsz"],
+  "enemigos": ["EnemyEFighter", "EnemyMotora", "EnemyLander", "EnemyEggRobo", "EnemySpinner", "EnemyGunHunter",
+               "EnemyEPawnCommon", "EnemyEPawnSSH", "EnemyEPawnPLA", "EnemyTaker"],
   "bgm_container": "SNG15_BPC",
   "bgm_nombre": "Boss_Perfect_Chaos1"
 }
