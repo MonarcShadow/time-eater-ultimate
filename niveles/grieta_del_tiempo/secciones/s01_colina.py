@@ -51,6 +51,6 @@ def construir():
     t = carretera(30, ancho=14, mat="ghz")                       # recta antes del tramo 2D
 
     # tramo 2D: plataformas sobre tuberías y Mega Mack
-    t = tramo_2d("s1_2d", (0, 1.5, 3.0, 1.0, 2.5, 0, 1.5, 3.0, 1.5, 0), mats=("ghz", "cpz"), tubos="cpz", mat_salida="ghz")
+    t = tramo_2d("s1_2d", (0, 1.5, 3.0, 1.0, 2.5, 0, 1.5, 3.0, 1.5, 0), mats=("ghz", "cpz"), tubos="cpz", mat_salida="ghz", enemigos="ghz")
     with en(t, 22):
         egg_fighter(0, -3)                                       # Egg Fighters de Rooftop Run custodiando la entrada a la calle

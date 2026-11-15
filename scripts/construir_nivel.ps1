@@ -48,7 +48,7 @@ $script = if ($cfg.script) { Join-Path $dirNivel $cfg.script } else { Join-Path 
 $log = & $blender --background --factory-startup --python $script -- $dirNivel $salidaBl 2>&1 | ForEach-Object { "$_" }
 $ErrorActionPreference = "Stop"
 if (-not ($log -match "TEU_ESCENA_OK")) { $log | Select-Object -Last 30; throw "Blender no terminó la escena" }
-$log | Where-Object { $_ -match "TEU_RESUMEN" } | ForEach-Object { Write-Host "   $_" }
+$log | Where-Object { $_ -match "TEU_" -and $_ -notmatch "TEU_ESCENA_OK" } | ForEach-Object { Write-Host "   $_" }
 Copy-Item (Join-Path $salidaBl "$($cfg.nombre).blend") $dirNivel -Force   # la escena queda en el repo para editarla
 
 # 2. Hedgehog Converter -------------------------------------------------------------------------

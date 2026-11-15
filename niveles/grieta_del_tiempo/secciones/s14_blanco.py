@@ -10,7 +10,7 @@ def construir():
     t = carretera(40, ancho=16, mat="blanco", muros=0.4)
     with en(t, 10):
         arco_costura(16)
-    tramo_2d("s14_2d", (0, 1.5, 3.0, 1.5, 3.0, 4.5, 3.0, 1.5, 0), mats=("blanco", "gris"), mat_salida="blanco")
+    tramo_2d("s14_2d", (0, 1.5, 3.0, 1.5, 3.0, 4.5, 3.0, 1.5, 0), mats=("blanco", "gris"), mat_salida="blanco", enemigos="euc")
     # avenida blanca (nuevo en 0.7.0): las 9 zonas desteñidas a los lados y paneles para el último sprint
     ritmo("rapido")
     t = carretera(220, ancho=22, mat="blanco", muros=0.4)

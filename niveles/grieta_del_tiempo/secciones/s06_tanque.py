@@ -37,4 +37,4 @@ def construir():
     t = carretera(40, ancho=14, mat="ssh")
     with en(t, 15):
         enemigo("ssh", 0, -3)
-    tramo_2d("s6_2d", (0, 1.5, 0, 1.5, 3.0, 1.5), mats=("cpz", "ssh"), tubos="cpz", mat_salida="ssh")
+    tramo_2d("s6_2d", (0, 1.5, 0, 1.5, 3.0, 1.5), mats=("cpz", "ssh"), tubos="cpz", mat_salida="ssh", enemigos="cpz")

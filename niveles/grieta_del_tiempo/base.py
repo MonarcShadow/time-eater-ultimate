@@ -17,6 +17,43 @@ if _COMUN not in sys.path:
 from plantillas_objetos import PLANTILLAS  # noqa: E402
 
 # ----------------------------------------------------------------------------------------------
+# Ajustes editables a mano: ajustes.conf (líneas "NOMBRE = valor", comentarios con #)
+# ----------------------------------------------------------------------------------------------
+AJUSTES_POR_DEFECTO = {
+    "HOMING_ALCANCE_3D": 32.0,     # m; el juego trae 21.1
+    "HOMING_ALCANCE_2D": 20.0,     # m; el juego trae 13.5
+    "GIRO_CAMARA_RELOJ": 315.0,    # grados; planeo de la sección 11
+    "GIRO_CAMARA_PLANEO": 135.0,   # grados; planeo final (sección 12)
+}
+
+
+def leer_ajustes(ruta=os.path.join(os.path.dirname(os.path.abspath(__file__)), "ajustes.conf")):
+    ajustes = dict(AJUSTES_POR_DEFECTO)
+    leidos = set()
+    if os.path.exists(ruta):
+        with open(ruta, encoding="utf-8") as f:
+            for n, linea in enumerate(f, 1):
+                linea = linea.split("#", 1)[0].strip()
+                if not linea:
+                    continue
+                if "=" not in linea:
+                    print(f"TEU_AVISO ajustes.conf línea {n}: falta '=' ({linea})")
+                    continue
+                clave, valor = (p.strip() for p in linea.split("=", 1))
+                try:
+                    ajustes[clave] = float(valor)
+                    leidos.add(clave)
+                except ValueError:
+                    print(f"TEU_AVISO ajustes.conf línea {n}: '{valor}' no es un número")
+    for clave in AJUSTES_POR_DEFECTO:
+        if clave not in leidos:
+            print(f"TEU_AVISO ajustes.conf no define {clave}: se usa {AJUSTES_POR_DEFECTO[clave]:g}")
+    return ajustes
+
+
+AJUSTES = leer_ajustes()
+
+# ----------------------------------------------------------------------------------------------
 # Materiales: gris para el recorrido, un color por zona para las "intrusiones", costura morada y blanco
 # ----------------------------------------------------------------------------------------------
 COLORES = {
@@ -488,7 +525,7 @@ ENEMIGOS = {
     "sph": ("EnemySpinner", 2.5, ["EnemySpinner"]),
     "cte": ("EnemyGunHunter3D", 0.0, ["EnemyGunHunter"]),
     "ssh": ("EnemyPawnLance3D", 0.0, ["EnemyEPawnCommon", "EnemyEPawnSSH"]),
-    "csc": ("EnemyTaker3D", 2.0, ["EnemyTaker"]),       # en Crisis City vuelan; a 0 m quedaba medio hundido (0.7.0)
+    "csc": ("EnemyTaker3D", 3.0, ["EnemyTaker"]),       # vuelan; a 0 m quedaba hundido (0.7.0), a 2 m algo bajo (0.7.1)
     "euc": ("EnemyEFighter3D", 0.0, ["EnemyEFighter"]),
     "pla": ("EnemyPawnPla3D", 0.0, ["EnemyEPawnCommon", "EnemyEPawnPLA"]),
 }
@@ -511,12 +548,15 @@ PLANTILLAS.setdefault("EnemyEFighter3D", CAMPOS_EFIGHTER)
 ZONAS_USADAS = set()
 
 
-def enemigo(zona, adelante=0.0, lado=0.0):
+def enemigo(zona, adelante=0.0, lado=0.0, arriba=None):
     """Enemigo de la zona indicada, mirando hacia Sonic. Los puntos de patrulla (WayPointA/B) de la plantilla se
-    sustituyen por la posición del enemigo (en los originales eran su propia posición)."""
+    sustituyen por la posición del enemigo (en los originales eran su propia posición).
+    arriba: altura sobre el cursor (por defecto, la de la tabla ENEMIGOS)."""
     if zona not in ENEMIGOS_ACTIVOS:
         zona = "euc"
     tipo, alto, _ = ENEMIGOS[zona]
+    if arriba is not None:
+        alto = arriba
     ZONAS_USADAS.add(zona)
     p = a_juego(K.frame(adelante, lado, alto))
     campos = PLANTILLAS[tipo]
@@ -564,9 +604,21 @@ def plataforma_giratoria(adelante, lado=0.0, arriba=4.0, velocidad=1.2):
                adelante, lado, arriba, q=(1.0, 0.0, 0.0, 0.0))
 
 
+def cambio_bgm(adelante, cue=0):
+    """ChangeBGMCollision cruzando la pista (campos de cte200). Experimento 0.7.2: en el slot de jefe la música solo
+    sonaba tras reiniciar; al cruzarlo con IsResetOnFront se intenta forzar el arranque del tema del escenario."""
+    return obj("ChangeBGMCollision", "<Collision_Height>30</Collision_Height><Collision_Width>30</Collision_Width>"
+               f"<CueIDOnBack>{cue}</CueIDOnBack><CueIDOnFront>{cue}</CueIDOnFront><GroundOffset>0</GroundOffset>"
+               "<IsCastShadow>false</IsCastShadow><IsResetOnBack>false</IsResetOnBack><IsResetOnFront>true</IsResetOnFront>"
+               "<LerpTimeBack>0.5</LerpTimeBack><LerpTimeFront>0.5</LerpTimeFront><Range>100</Range>",
+               adelante, 0.0, 0.0, q=q_yaw())
+
+
 def grind_dash(pos_blender, velocidad=60):
+    # OutOfControl 0.25 como en cpz200/csc200/pla200: con 2.5 (de ghz200) Sonic no podía saltar en el riel y seguía
+    # sin control unos segundos al salir (prueba de la 0.7.1)
     obj("GrindDashPanel", "<GroundOffset>0</GroundOffset><IsCastShadow>true</IsCastShadow><IsFront>true</IsFront>"
-        f"<IsStartVelocityConstant>true</IsStartVelocityConstant><OutOfControl>2.5</OutOfControl><Range>100</Range><Speed>{velocidad}</Speed>",
+        f"<IsStartVelocityConstant>true</IsStartVelocityConstant><OutOfControl>0.25</OutOfControl><Range>100</Range><Speed>{velocidad}</Speed>",
         pos=pos_blender)
 
 
@@ -622,11 +674,13 @@ def riel_grind(nombre, puntos):
 # Patrones de recorrido reutilizables
 # ----------------------------------------------------------------------------------------------
 def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, ancho=6.0, tubos=None,
-             resortes=(), ancho_salida=14, mat_salida="gris"):
+             resortes=(), ancho_salida=14, mat_salida="gris", enemigos=None):
     """Tramo de plataformas en 2D (patrón de la sección 1, probado en el juego). Se llama al final de una carretera
     recta de al menos 20 m: el cambio a 2D va 12 m antes del final; la vuelta a 3D, 8 m dentro de la carretera de
     salida (30 m), que esta función también crea. alturas: altura de cada plataforma respecto al suelo (subidas de
-    1,5 m como máximo, o un resorte en 'resortes' = índices de plataforma). Devuelve el Tramo de salida."""
+    1,5 m como máximo, o un resorte en 'resortes' = índices de plataforma). Devuelve el Tramo de salida.
+    enemigos: zona (o None): un enemigo en el centro de cada plataforma y un Spinner volando sobre cada hueco, para
+    poder encadenar homing attacks (pedido en la prueba de la 0.7.1)."""
     ritmo("2d")
     a_2d(-12)
     total = len(alturas) * largo_plat + (len(alturas) - 1) * hueco + 3.0
@@ -641,6 +695,10 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
             resorte_vertical(x + largo - 1.5, 0, h, velocidad=26)
         if tubos:
             tubo((x + largo / 2, 0, h - 16), (x + largo / 2, 0, h - 3.1), 1.8, tubos)
+        if enemigos:
+            enemigo(enemigos, x + largo / 2, 0, arriba=h + ENEMIGOS[enemigos][1])
+            if i < len(alturas) - 1:
+                enemigo("sph", x + largo + hueco / 2, 0, arriba=max(h, alturas[i + 1]) + 4.0)
         x += largo + hueco
     x -= hueco
     K.avanzar(x, alturas[-1])          # la carretera de salida va a la altura de la última plataforma
@@ -652,19 +710,23 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
 
 def plataformas_3d(n, largo=18.0, hueco=7.0, ancho=10.0, mats=("gris",), dz=(0.0,), muerte=25.0, enemigos=None):
     """Serie de plataformas flotantes en 3D separadas por huecos que se saltan sin ayuda (7 m a velocidad normal).
-    dz: cambio de altura al pasar a cada plataforma (cíclico; ±1,5 m como máximo). enemigos: zona o None."""
+    dz: cambio de altura al pasar a cada plataforma (cíclico; ±1,5 m como máximo).
+    enemigos: zona o None. Con zona: dos enemigos por plataforma y un Spinner volando sobre cada hueco."""
     ritmo("plataformas")
     total = n * largo + (n - 1) * hueco
     suelo_muerte(-2, total + 4, ancho=40, profundidad=muerte)
     for i in range(n):
         if i:
+            if enemigos:                     # Spinner volando sobre el hueco: enlaza el homing entre plataformas
+                enemigo("sph", hueco / 2, 0, arriba=max(0.0, dz[i % len(dz)]) + 5.0)
             K.avanzar(hueco, dz[i % len(dz)])
             sumar_tiempo(hueco / VEL["plataformas"], hueco)
         t = carretera(largo, ancho=ancho, mat=mats[i % len(mats)], muros=0)
         anillos(4, largo - 4, cada=3, tramo=t)
-        if enemigos and i % 2 == 1:
-            with en(t, largo / 2):
-                enemigo(enemigos, 0, 2.5 if i % 4 == 1 else -2.5)
+        if enemigos:                         # dos enemigos por plataforma (antes uno en las impares)
+            for s, lado in ((largo / 3, 2.5), (2 * largo / 3, -2.5)):
+                with en(t, s):
+                    enemigo(enemigos, 0, lado)
     ritmo("3d")
 
 

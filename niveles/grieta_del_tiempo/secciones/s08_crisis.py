@@ -32,4 +32,4 @@ def construir():
     t = carretera(40, ancho=14, mat="ghz")
     with en(t, 20):
         arco_costura(14)
-    tramo_2d("s8_2d", (0, 1.5, 3.0, 1.5, 0), mats=("csc", "ghz"), mat_salida="ghz")
+    tramo_2d("s8_2d", (0, 1.5, 3.0, 1.5, 0), mats=("csc", "ghz"), mat_salida="ghz", enemigos="csc")

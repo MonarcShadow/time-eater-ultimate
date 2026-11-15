@@ -81,4 +81,4 @@ def construir():
     with en(t, 10):
         enemigo("euc", 0, 3)
     # 2D sobre las ruinas
-    tramo_2d("s2_2d", (0, 1.5, 0, 1.5, 3.0, 1.5, 0), mats=("ssz", "cte"), mat_salida="ssz")
+    tramo_2d("s2_2d", (0, 1.5, 0, 1.5, 3.0, 1.5, 0), mats=("ssz", "cte"), mat_salida="ssz", enemigos="ssz")

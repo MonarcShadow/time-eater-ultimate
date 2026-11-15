@@ -2,9 +2,9 @@
 # corto que el final y en otra dirección (sirve para comprobar el giro de la cámara de planeo). (~15 s)
 from base import *  # noqa: F401,F403
 
-# Giro de la cámara de este planeo, en grados (vista desde arriba). 135 es el valor confirmado en el pozo final,
-# que va en otra dirección: si aquí la cámara no mira hacia la salida, ajustar este número y reconstruir.
-GIRO_CAMARA_RELOJ = 135
+# Giro de la cámara de este planeo, en grados (vista desde arriba): se ajusta en ajustes.conf (GIRO_CAMARA_RELOJ).
+# Con 135 (0.7.1, Yaw −75) la salida quedaba casi 180° detrás; 0.7.2 prueba 315 (Yaw 105).
+GIRO_CAMARA_RELOJ = AJUSTES["GIRO_CAMARA_RELOJ"]
 
 
 def construir():

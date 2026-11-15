@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.2
+Grieta del Tiempo:
+- **Rieles:** ahora se puede saltar en el riel y Sonic responde al salir. El panel del riel bloqueaba los controles 2,5 s; ahora 0,25 s, como en los niveles originales.
+- **Planeo de la sección 11:** cámara girada 180° más, para que la salida quede delante.
+- **Planeo final (sección 12):** pozo de 370 m, unos **20 s de planeo**. Sin las plataformas blancas del centro; los escombros van pegados a las paredes.
+- **Más enemigos en las plataformas** para encadenar homing attacks: dos en cada plataforma 3D, uno en cada plataforma 2D y un Spinner volando sobre cada hueco.
+- **Homing con más alcance** (solo en este nivel): 32 m en 3D (antes 21) y 20 m en 2D (antes 13,5). Se cambia en `niveles/grieta_del_tiempo/ajustes.conf`, igual que los ángulos de cámara de los planeos.
+- **Taker** un metro más alto (3 m).
+- **Música (experimento):** un activador al principio intenta que la música suene desde la primera carga. También en el laboratorio.
+
 ## 0.7.1
 - **Grieta del Tiempo:** arreglado el fallo por el que, a partir de la sección 7, los objetos dejaban de funcionar (anillos, paneles, checkpoints) y no se podía terminar el nivel. El nivel salía del "mundo" de física del juego; ahora el escenario declara un mundo que lo cubre entero, como hace el escenario del Time Eater.
 - **Taker** (Crisis City) un poco más alto: ya no queda medio hundido en el suelo (en Grieta y en el laboratorio).

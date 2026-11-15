@@ -53,4 +53,4 @@ def construir():
         with en(t, s):
             enemigo(zona, 0, lado)
     # bajada en 2D por los andamios de la fachada
-    tramo_2d("s7_2d", (0, -1.5, -3.0, -1.5, -3.0, -4.5, -6.0), mats=("sph", "cpz"), tubos="cpz", mat_salida="sph")
+    tramo_2d("s7_2d", (0, -1.5, -3.0, -1.5, -3.0, -4.5, -6.0), mats=("sph", "cpz"), tubos="cpz", mat_salida="sph", enemigos="sph")

@@ -57,4 +57,4 @@ def construir():
             tubo((0, -10, -12), (0, -10, 8), 1.5, "cpz")
     anillos(10, 170, cada=6, tramo=t)
     t = carretera(30, ancho=16, mat="pla")
-    tramo_2d("s5_2d_b", (0, -1.5, -3.0, -1.5, -3.0, -4.5, -3.0, -4.5), mats=("pla", "cpz"), tubos="cpz", mat_salida="pla")
+    tramo_2d("s5_2d_b", (0, -1.5, -3.0, -1.5, -3.0, -4.5, -3.0, -4.5), mats=("pla", "cpz"), tubos="cpz", mat_salida="pla", enemigos="pla")

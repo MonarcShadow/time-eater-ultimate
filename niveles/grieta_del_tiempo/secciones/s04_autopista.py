@@ -54,7 +54,7 @@ def construir():
     t = riel("s4_riel", 120, 10, plataforma_final=40, mat="ssz")
     anillos(5, 30, cada=5, tramo=t)
     # letreros en 2D
-    t = tramo_2d("s4_2d", (0, 1.5, 3.0, 1.5, 0, 1.5, 0), mats=("sph", "ssz"), mat_salida="ssz")
+    t = tramo_2d("s4_2d", (0, 1.5, 3.0, 1.5, 0, 1.5, 0), mats=("sph", "ssz"), mat_salida="ssz", enemigos="sph")
     t = carretera(150, ancho=16, mat="ssz", muros=0.8)
     for s, zona, lado in ((50, "ssz", 4), (100, "sph", -4)):
         with en(t, s):

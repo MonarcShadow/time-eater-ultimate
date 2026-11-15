@@ -68,4 +68,4 @@ def construir():
         for k in range(5):
             tubo((0, 40, -10 + k * 11), (2 * math.cos(k), 40 + 2 * math.sin(k), 1 + k * 11), 3 + k * 1.4, "csc", solido=False, n=9)
     t = carretera(30, ancho=16, mat="ssh")
-    tramo_2d("s3_2d", (0, 1.5, 0, 1.5, 0), mats=("ssh", "csc"), mat_salida="ssh")
+    tramo_2d("s3_2d", (0, 1.5, 0, 1.5, 0), mats=("ssh", "csc"), mat_salida="ssh", enemigos="ssh")

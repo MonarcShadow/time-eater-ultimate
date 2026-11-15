@@ -21,7 +21,7 @@ def construir():
             enemigo("pla", 0, lado)
     anillos(10, 150, cada=7, tramo=t)
     t = carretera(40, ancho=14, mat="pla")
-    t = tramo_2d("s10_2d", (0, 1.5, 3.0, 4.5, 3.0, 1.5, 3.0, 1.5, 0, 1.5), mats=("pla", "ssz"), mat_salida="ssz")
+    t = tramo_2d("s10_2d", (0, 1.5, 3.0, 4.5, 3.0, 1.5, 3.0, 1.5, 0, 1.5), mats=("pla", "ssz"), mat_salida="ssz", enemigos="pla")
     t = carretera(120, ancho=18, mat="ssz", muros=0.8)
     cristales(t, 24)
     for s, lado in ((35, 7), (85, -7)):
@@ -31,7 +31,7 @@ def construir():
         with en(t, s):
             enemigo(zona, 0, lado)
     anillos(10, 110, cada=6, tramo=t)
-    plataformas_3d(4, largo=16, hueco=6, ancho=10, mats=("pla", "ssz"), dz=(0, 1.0, -1.0))
+    plataformas_3d(4, largo=16, hueco=6, ancho=10, mats=("pla", "ssz"), dz=(0, 1.0, -1.0), enemigos="pla")
     t = carretera(100, ancho=16, giro_grados=30, mat="ssz", muros=1.0, muro_der=3.0)   # curva a la izquierda
     cristales(t, 25)
     anillos(10, 90, cada=6, tramo=t)

@@ -41,6 +41,7 @@ base.crear_materiales(salida)
 SECCIONES = ["s01_colina", "s02_calle", "s03_mar", "s04_autopista", "s05_fabrica", "s06_tanque", "s07_rascacielos",
              "s08_crisis", "s09_persecucion", "s10_jardin", "s11_reloj", "s12_caida", "s13_eco", "s14_blanco"]
 INICIO = K.frame(2, 0, 0.1)
+base.cambio_bgm(8)          # experimento 0.7.2: que la música suene desde la primera carga (ver base.cambio_bgm)
 for nombre in SECCIONES:
     importlib.import_module("secciones." + nombre).construir()
 FINAL = importlib.import_module("secciones.s14_blanco").FINAL[0]
@@ -171,6 +172,60 @@ with open(os.path.join(dir_xml, "Stage.stg.xml"), "w", encoding="utf-8") as f:
 </Stage>
 """)
 
+# Parámetros de Sonic solo para este escenario (redefinición parcial, como hace el #bpc original con <Water>):
+# - Planeo más lento que el global de bb3\#Sonic.ar.00 (Float 40, Dive 90.1, BeginGravityScale 2.4).
+# - Alcance del homing desde ajustes.conf (global: ForwardView 21.1 / 21.1; SideView 13.5 / 18.3).
+h3d = base.AJUSTES["HOMING_ALCANCE_3D"]
+h2d = base.AJUSTES["HOMING_ALCANCE_2D"]
+h2d_n = h2d * 18.3 / 13.5
+
+
+def homing(lejos, lejos_n):
+    return f"""
+    <Category>
+      <HomingAttack>
+        <Param>
+          <HomingLockonCollisionFar>{lejos:g}</HomingLockonCollisionFar>
+          <HomingLockonCollisionFarN>{lejos_n:.1f}</HomingLockonCollisionFarN>
+        </Param>
+      </HomingAttack>
+    </Category>"""
+
+
+with open(os.path.join(dir_xml, "Sonic.prm.xml"), "w", encoding="utf-8") as f:
+    f.write(f"""<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<!-- Parámetros de Sonic solo para Grieta del Tiempo, generado por niveles/grieta_del_tiempo/generar.py.
+     El alcance del homing se cambia en niveles/grieta_del_tiempo/ajustes.conf. -->
+<Sonic.prm.xml>
+  <Common>
+    <Category>
+      <Diving>
+        <Param>
+          <DivingDamageTime>1</DivingDamageTime>
+          <DivingDamageVelocityDecreaseRate>0.5</DivingDamageVelocityDecreaseRate>
+          <DivingDiveBeginGravityScale>1.2</DivingDiveBeginGravityScale>
+          <DivingDiveBeginHorzVelocityRate>0.85</DivingDiveBeginHorzVelocityRate>
+          <DivingDiveEndSpeed>20</DivingDiveEndSpeed>
+          <DivingDiveMaxVelocityDown>45</DivingDiveMaxVelocityDown>
+          <DivingDiveVelocityFront>0.7</DivingDiveVelocityFront>
+          <DivingDiveVelocitySide>0.7</DivingDiveVelocitySide>
+          <DivingFloatMaxVelocityDown>18</DivingFloatMaxVelocityDown>
+          <DivingFloatVelocityFront>0.4</DivingFloatVelocityFront>
+          <DivingFloatVelocitySide>0.4</DivingFloatVelocitySide>
+          <DivingRotationMax>20</DivingRotationMax>
+        </Param>
+      </Diving>
+    </Category>
+  </Common>
+  <ForwardView>{homing(h3d, h3d)}
+  </ForwardView>
+  <SideView>{homing(h2d, h2d_n)}
+  </SideView>
+</Sonic.prm.xml>
+""")
+
+print(f"TEU_HOMING 3D={h3d:g} m, 2D={h2d:g}/{h2d_n:.1f} m; camara reloj={base.AJUSTES['GIRO_CAMARA_RELOJ']:g}, "
+      f"planeo final={base.AJUSTES['GIRO_CAMARA_PLANEO']:g}")
 print(f"TEU_RESUMEN objetos={len(OBJETOS)} caras={len(SOLIDO.f)} splines={len(CURVAS)} deadheight={dead} "
       f"checkpoints={base.PM_ID[0]} mundo=({mundo_min[0]:.0f},{mundo_min[1]:.0f},{mundo_min[2]:.0f})-({mundo_max[0]:.0f},{mundo_max[1]:.0f},{mundo_max[2]:.0f}) final=({FINAL[0]:.0f},{FINAL[1]:.0f},{FINAL[2]:.0f})")
 print("TEU_ESCENA_OK", salida)
