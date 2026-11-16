@@ -78,7 +78,7 @@ def construir():
             for lado in (-15, 15):
                 decorado(0, lado, -6, (16, 6, 16 + (k * 5) % 12), "cte")
     t = carretera(60, ancho=16, mat="cte")
-    with en(t, 10):
+    with en(t, 5):                                    # fuera del margen del cambio a 2D (a 48 m)
         enemigo("euc", 0, 3)
     # 2D sobre las ruinas
     tramo_2d("s2_2d", (0, 1.5, 0, 1.5, 3.0, 1.5, 0), mats=("ssz", "cte"), mat_salida="ssz", enemigos="ssz")

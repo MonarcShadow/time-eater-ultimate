@@ -3,7 +3,8 @@
 from base import *  # noqa: F401,F403
 
 # Giro de la cámara de este planeo, en grados (vista desde arriba): se ajusta en ajustes.conf (GIRO_CAMARA_RELOJ).
-# Con 135 (0.7.1, Yaw −75) la salida quedaba casi 180° detrás; 0.7.2 prueba 315 (Yaw 105).
+# Con 135 (0.7.1, Yaw −75) la salida quedaba casi 180° detrás; 0.7.2 probó 315 (Yaw 105) y el usuario, con 180,
+# lo ve "casi ideal".
 GIRO_CAMARA_RELOJ = AJUSTES["GIRO_CAMARA_RELOJ"]
 
 

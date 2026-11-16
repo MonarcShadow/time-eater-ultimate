@@ -29,7 +29,7 @@ def construir():
     with en(t, 100):
         visual(80, 0, -18, (180, 70, 0.3), "csc")                            # mar de lava (adorno; abajo hay suelo de muerte)
     plataformas_3d(7, largo=16, hueco=7, ancho=10, mats=("csc", "ghz"), dz=(0, 1.5, -1.5), muerte=20, enemigos="csc")
-    t = carretera(40, ancho=14, mat="ghz")
+    t = carretera(64, ancho=14, mat="ghz")            # 64 m: margen sin huecos ni enemigos antes del cambio a 2D
     with en(t, 20):
         arco_costura(14)
     tramo_2d("s8_2d", (0, 1.5, 3.0, 1.5, 0), mats=("csc", "ghz"), mat_salida="ghz", enemigos="csc")

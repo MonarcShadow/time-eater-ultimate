@@ -34,7 +34,7 @@ def construir():
             visual(0, 0, 9, (3, 22, 0.4), "cpz")                    # aros del tanque
     anillos(5, 75, cada=5, tramo=t, lado=-3)
     t = carretera(60, ancho=16, dz=8, mat="cpz", mat_muro="cpz", muros=3)
-    t = carretera(40, ancho=14, mat="ssh")
-    with en(t, 15):
+    t = carretera(60, ancho=14, mat="ssh")
+    with en(t, 6):                                    # fuera del margen del cambio a 2D (a 48 m)
         enemigo("ssh", 0, -3)
     tramo_2d("s6_2d", (0, 1.5, 0, 1.5, 3.0, 1.5), mats=("cpz", "ssh"), tubos="cpz", mat_salida="ssh", enemigos="cpz")

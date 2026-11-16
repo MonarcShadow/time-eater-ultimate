@@ -49,6 +49,7 @@ FINAL = importlib.import_module("secciones.s14_blanco").FINAL[0]
 # informes: tiempo estimado, solapes del recorrido y archivos de enemigos que debe cargar nivel.json
 base.informe_tiempo()
 base.comprobar_solapes()
+base.comprobar_margen_2d()
 faltan = [a for a in base.archivos_enemigos() if a not in cfg.get("enemigos", [])]
 if faltan:
     print(f"TEU_AVISO faltan en nivel.json 'enemigos': {', '.join(faltan)}")

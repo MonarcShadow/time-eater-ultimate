@@ -28,7 +28,7 @@ def construir():
                 tubo((0, 14, 11), (0, 14, -6), 2.0, "gris")
         with en(t, 30):
             decorado(0, 18 if k % 2 else -18, -8, (30, 8, 12 + 2 * k), "blanco")
-    t = carretera(30, ancho=14, mat="blanco")
+    t = carretera(36, ancho=14, mat="blanco")         # 36 m: el último Lander queda fuera del margen del cambio a 2D
     t = tramo_2d("s13_2d", (0, 1.5, 3.0, 1.5, 0, 1.5, 3.0, 1.5), mats=("blanco", "gris"), tubos="gris", mat_salida="blanco", enemigos="euc")
     # vuelta al rumbo: curva a la derecha
     t = carretera(110, ancho=16, giro_grados=-45, mat="blanco", mat_muro="gris", muro_izq=3.0)

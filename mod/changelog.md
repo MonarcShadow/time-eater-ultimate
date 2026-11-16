@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.3
+Grieta del Tiempo:
+- **El homing ya no se corta en los cambios entre 3D y 2D:** hay 40 m (unos 2 s) sin huecos ni enemigos antes y después de cada cambio. La distancia se cambia en `ajustes.conf` (`MARGEN_CAMBIO_2D`).
+- **Cámara al aterrizar de un planeo:** en el fondo de los dos pozos, la cámara se pone detrás de Sonic mirando al túnel de salida, sin esperar a que se mueva.
+- **Planeo de la sección 11:** cámara con giro 180 (probado en la 0.7.2). El pozo final usa −45, en prueba.
+- **`RECONSTRUIR_GRIETA.bat`:** después de cambiar `ajustes.conf`, un doble clic reconstruye el nivel y lo copia al juego.
+
 ## 0.7.2
 Grieta del Tiempo:
 - **Rieles:** ahora se puede saltar en el riel y Sonic responde al salir. El panel del riel bloqueaba los controles 2,5 s; ahora 0,25 s, como en los niveles originales.

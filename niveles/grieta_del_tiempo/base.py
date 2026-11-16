@@ -22,8 +22,9 @@ from plantillas_objetos import PLANTILLAS  # noqa: E402
 AJUSTES_POR_DEFECTO = {
     "HOMING_ALCANCE_3D": 32.0,     # m; el juego trae 21.1
     "HOMING_ALCANCE_2D": 20.0,     # m; el juego trae 13.5
-    "GIRO_CAMARA_RELOJ": 315.0,    # grados; planeo de la sección 11
+    "GIRO_CAMARA_RELOJ": 180.0,    # grados; planeo de la sección 11 ("casi ideal" en la prueba de la 0.7.2)
     "GIRO_CAMARA_PLANEO": 135.0,   # grados; planeo final (sección 12)
+    "MARGEN_CAMBIO_2D": 40.0,      # m libres de huecos y enemigos a cada lado de un cambio 3D<->2D (~2 s corriendo)
 }
 
 
@@ -196,6 +197,11 @@ DANO = Malla()         # zonas que hacen daño, p. ej. lava (solo colisión, tag
 OBJETOS = []           # (xml) set data
 CURVAS = []            # (nombre, [[puntos riel 1], [puntos riel 2]?])
 QUICKSTEPS = []        # nombres de splines @QS (se declaran en Stage.stg.xml como SingleForward)
+# Para comprobar el margen alrededor de los cambios 3D<->2D (el homing se corta al cruzar uno, prueba de la 0.7.2).
+# Puntos en Blender; sección en la que se colocaron.
+CAMBIOS_2D = []        # (x, y, z, sección)
+PUNTOS_ENEMIGO = []    # (x, y, z, sección, tipo)
+TRAMOS_MUERTE = []     # ((x, y, z) inicio, (x, y, z) fin, sección): bordes de los huecos (a la altura del recorrido)
 SID = [910000]
 MIN_Z = [0.0]
 
@@ -292,6 +298,39 @@ def comprobar_solapes(dist_h=30.0, dist_v=22.0, separacion=150.0):
     for a, b in sorted(avisos):
         print(f"TEU_AVISO solape: '{a}' pasa cerca de '{b}'")
     return len(avisos)
+
+
+def seccion_actual():
+    return SECCIONES[-1][0] if SECCIONES else "?"
+
+
+def _dist_segmento(p, a, b):
+    """Distancia horizontal de p al segmento a-b, y diferencia de altura con el punto más cercano."""
+    ax, ay = b[0] - a[0], b[1] - a[1]
+    l2 = ax * ax + ay * ay
+    t = 0.0 if l2 == 0 else max(0.0, min(1.0, ((p[0] - a[0]) * ax + (p[1] - a[1]) * ay) / l2))
+    q = (a[0] + ax * t, a[1] + ay * t, a[2] + (b[2] - a[2]) * t)
+    return math.hypot(p[0] - q[0], p[1] - q[1]), abs(p[2] - q[2])
+
+
+def comprobar_margen_2d(dist_v=25.0):
+    """Avisa de enemigos o huecos (suelos de muerte) a menos de MARGEN_CAMBIO_2D m en horizontal de un cambio
+    3D<->2D: un homing attack que cruza el cambio de modo se cancela (prueba de la 0.7.2)."""
+    margen = AJUSTES["MARGEN_CAMBIO_2D"] - 0.5      # tolerancia: el primer hueco de tramo_2d cae justo en el margen
+    n = 0
+    for cx, cy, cz, sec in CAMBIOS_2D:
+        for ex, ey, ez, sec_e, tipo in PUNTOS_ENEMIGO:
+            d = math.hypot(ex - cx, ey - cy)
+            if d < margen and abs(ez - cz) < dist_v:
+                print(f"TEU_AVISO margen 2D: {tipo} ({sec_e}) a {d:.0f} m de un cambio de modo ({sec})")
+                n += 1
+        for a, b, sec_m in TRAMOS_MUERTE:
+            d, dz = _dist_segmento((cx, cy, cz), a, b)
+            if d < margen and dz < dist_v:
+                print(f"TEU_AVISO margen 2D: hueco ({sec_m}) a {d:.0f} m de un cambio de modo ({sec})")
+                n += 1
+    print(f"TEU_MARGEN_2D {len(CAMBIOS_2D)} cambios de modo, margen {margen:g} m, {n} avisos")
+    return n
 
 
 class Tramo:
@@ -418,6 +457,7 @@ def suelo_muerte(adelante, largo, ancho=30.0, profundidad=15.0):
     x, y, z = K.frame(adelante + largo / 2, 0, -profundidad)
     MUERTE.caja((x, y, z - 1), (largo, ancho, 1.0), K.th, "gris")
     MIN_Z[0] = min(MIN_Z[0], z - 1)
+    TRAMOS_MUERTE.append((K.frame(adelante, 0, 0), K.frame(adelante + largo, 0, 0), seccion_actual()))
 
 
 # ----------------------------------------------------------------------------------------------
@@ -558,7 +598,9 @@ def enemigo(zona, adelante=0.0, lado=0.0, arriba=None):
     if arriba is not None:
         alto = arriba
     ZONAS_USADAS.add(zona)
-    p = a_juego(K.frame(adelante, lado, alto))
+    pb = K.frame(adelante, lado, alto)
+    PUNTOS_ENEMIGO.append((pb[0], pb[1], pb[2], seccion_actual(), tipo))
+    p = a_juego(pb)
     campos = PLANTILLAS[tipo]
     for wp in ("WayPointA", "WayPointB"):
         m = re.search(f"<{wp}><x>([^<]*)</x><y>([^<]*)</y><z>([^<]*)</z></{wp}>", campos)
@@ -626,6 +668,8 @@ def cambio_modo(tipo, adelante, salida=False, ancho=30, alto=40, extra="", arrib
     """Trigger de cambio de modo. Cruzarlo en su dirección activa el modo; un trigger girado 180° (salida)
     se cruza 'por detrás' y devuelve al modo 3D normal."""
     p = K.frame(adelante, 0, arriba)
+    if tipo == "ChangeMode_3Dto2D":
+        CAMBIOS_2D.append((p[0], p[1], p[2], seccion_actual()))
     pj = a_juego(p)
     destino = (pj[0], pj[1] - 5.0, pj[2])
     q = q_yaw(math.pi if salida else 0.0)
@@ -680,32 +724,44 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
     salida (30 m), que esta función también crea. alturas: altura de cada plataforma respecto al suelo (subidas de
     1,5 m como máximo, o un resorte en 'resortes' = índices de plataforma). Devuelve el Tramo de salida.
     enemigos: zona (o None): un enemigo en el centro de cada plataforma y un Spinner volando sobre cada hueco, para
-    poder encadenar homing attacks (pedido en la prueba de la 0.7.1)."""
+    poder encadenar homing attacks (pedido en la prueba de la 0.7.1).
+    Margen (0.7.3): un homing que cruza el cambio de modo se cancela, así que la primera plataforma empieza con una
+    pista de MARGEN_CAMBIO_2D - 12 m sin enemigos, la última mide MARGEN - 8 m y no lleva enemigo, y la carretera de
+    salida mide 8 + MARGEN m (lo que pongan las secciones encima debe ir más allá; generar.py lo comprueba)."""
+    margen = AJUSTES["MARGEN_CAMBIO_2D"]
     ritmo("2d")
     a_2d(-12)
-    total = len(alturas) * largo_plat + (len(alturas) - 1) * hueco + 3.0
+    n = len(alturas)
+    entrada = max(0.0, margen - 12.0)                       # pista de entrada (parte de la primera plataforma)
+    largo_final = max(largo_plat + 3.0, margen - 8.0)       # última plataforma (hasta el cambio de vuelta a 3D)
+    largos = [largo_plat] * n
+    largos[0] += entrada
+    largos[-1] = largo_final + (entrada if n == 1 else 0.0)
+    total = sum(largos) + (n - 1) * hueco
     curva_recta(f"{nombre}@SV", -17, total + 20, rieles=(-1.0, 1.0))
-    suelo_muerte(0, total, profundidad=15 + max(alturas))
+    if n > 1:                                               # suelo de muerte solo entre el primer y el último hueco
+        suelo_muerte(largos[0], total - largos[0] - largos[-1], profundidad=15 + max(alturas))
     x = 0.0
     for i, h in enumerate(alturas):
-        largo = largo_plat + (3.0 if i == len(alturas) - 1 else 0.0)
+        largo = largos[i]
         plataforma(x, 0, h, largo, ancho, alto=3, mat=mats[i % len(mats)])
         anillos(x + 2, x + largo - 2, cada=2.0, arriba=h + 0.8)
         if i in resortes:
             resorte_vertical(x + largo - 1.5, 0, h, velocidad=26)
         if tubos:
-            tubo((x + largo / 2, 0, h - 16), (x + largo / 2, 0, h - 3.1), 1.8, tubos)
+            tubo((x + largo - largo_plat / 2, 0, h - 16), (x + largo - largo_plat / 2, 0, h - 3.1), 1.8, tubos)
         if enemigos:
-            enemigo(enemigos, x + largo / 2, 0, arriba=h + ENEMIGOS[enemigos][1])
-            if i < len(alturas) - 1:
+            if i < n - 1:                                   # en el centro de la parte normal de la plataforma
+                enemigo(enemigos, x + largo - largo_plat / 2, 0, arriba=h + ENEMIGOS[enemigos][1])
                 enemigo("sph", x + largo + hueco / 2, 0, arriba=max(h, alturas[i + 1]) + 4.0)
         x += largo + hueco
     x -= hueco
     K.avanzar(x, alturas[-1])          # la carretera de salida va a la altura de la última plataforma
-    sumar_tiempo(x / VEL["2d"], x)
+    extra = entrada + largo_final - (largo_plat + 3.0)      # pistas planas: se recorren corriendo
+    sumar_tiempo((x - extra) / VEL["2d"] + extra / VEL["3d"], x)
     ritmo("3d")
     a_2d(8, salida=True)
-    return carretera(30, ancho=ancho_salida, mat=mat_salida)
+    return carretera(8 + margen, ancho=ancho_salida, mat=mat_salida)
 
 
 def plataformas_3d(n, largo=18.0, hueco=7.0, ancho=10.0, mats=("gris",), dz=(0.0,), muerte=25.0, enemigos=None):
@@ -768,6 +824,39 @@ CAMPOS_DIVE = "<DefaultStatus>0</DefaultStatus><GroundOffset>0</GroundOffset><Is
 Q_HORIZONTAL = (0.707107, 0.707107, 0.0, 0.0)           # caja tumbada, como en Chemical Plant
 
 
+def camara_aterrizaje(centro, fondo_z, dist_salida=30.0, alto=10.0, lado=28.0):
+    """Al aterrizar en el fondo del pozo la cámara se queda mirando desde arriba hasta que Sonic se mueve (prueba de
+    la 0.7.2). Un volumen en los últimos 'alto' m activa un ObjCameraObjectLook (campos de ghz200) que sigue a Sonic
+    (Target 0) mirando a un punto del túnel de salida, que sale en el rumbo actual (K.th) desde el centro. Así la
+    cámara queda detrás de Sonic mirando a la salida sin depender de la convención del Yaw. Al entrar en el túnel,
+    Sonic sale del volumen y vuelve la cámara normal.
+    El objetivo es una ObjCameraParallel sin volumen (nunca se activa, no desaparece como un anillo)."""
+    objetivo = (centro[0] + dist_salida * math.cos(K.th), centro[1] + dist_salida * math.sin(K.th), fondo_z + 2.0)
+    id_obj = obj("ObjCameraParallel", "<Distance>10</Distance><Ease_Time_Enter>0</Ease_Time_Enter><Ease_Time_Leave>0</Ease_Time_Leave>"
+                 "<Fovy>45</Fovy><GroundOffset>0</GroundOffset><IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow>"
+                 "<IsCollision>false</IsCollision><IsControllable>false</IsControllable><OffsetPitch>0</OffsetPitch><OffsetYaw>0</OffsetYaw>"
+                 "<Pitch>10</Pitch><Range>100000</Range><Target><SetObjectID>0</SetObjectID></Target>"
+                 "<TargetOffset_Front>0</TargetOffset_Front><TargetOffset_Right>0</TargetOffset_Right><TargetOffset_Up>0</TargetOffset_Up>"
+                 "<TargetOffset_Vel>0</TargetOffset_Vel><TargetPositionFix><x>0</x><y>0</y><z>0</z></TargetPositionFix><Target_Type>0</Target_Type>"
+                 "<VelOffsetXYZ>0</VelOffsetXYZ><Yaw>0</Yaw><ZRot>0</ZRot>",
+                 pos=objetivo, q=(1.0, 0.0, 0.0, 0.0))
+    id_cam = obj("ObjCameraObjectLook", "<Distance>8</Distance><Ease_Time_Enter>0</Ease_Time_Enter><Ease_Time_Leave>0</Ease_Time_Leave>"
+                 "<Fovy>50</Fovy><GroundOffset>0</GroundOffset><IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow>"
+                 "<IsCollision>false</IsCollision><IsControllable>false</IsControllable><Range>100000</Range>"
+                 f"<Target><SetObjectID>0</SetObjectID></Target><TargetObject><SetObjectID>{id_obj}</SetObjectID></TargetObject>"
+                 "<TargetOffset_Front>0</TargetOffset_Front><TargetOffset_Right>0</TargetOffset_Right><TargetOffset_Up>0</TargetOffset_Up>"
+                 "<TargetOffset_Vel>0</TargetOffset_Vel><TargetOffset_WorldX>0</TargetOffset_WorldX><TargetOffset_WorldY>2</TargetOffset_WorldY>"
+                 "<TargetOffset_WorldZ>0</TargetOffset_WorldZ><TargetPositionFix><x>0</x><y>0</y><z>0</z></TargetPositionFix>"
+                 "<Target_Type>0</Target_Type><VelOffsetXYZ>0</VelOffsetXYZ><ZRot>0</ZRot>",
+                 pos=(centro[0], centro[1], fondo_z + 2.0), q=(1.0, 0.0, 0.0, 0.0))
+    obj("ChangeVolumeCamera", f"<Collision_Height>{alto:g}</Collision_Height><Collision_Length>{lado:g}</Collision_Length>"
+        f"<Collision_Width>{lado:g}</Collision_Width><DefaultStatus>0</DefaultStatus><Ease_Time_Enter>0.5</Ease_Time_Enter>"
+        "<Ease_Time_Leave>1</Ease_Time_Leave><GroundOffset>0</GroundOffset><IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow>"
+        "<IsEnableCollision>false</IsEnableCollision><LineType>0</LineType><PositionList /><Priority>0</Priority><Range>300</Range>"
+        f"<Shape_Type>0</Shape_Type><Target><SetObjectID>{id_cam}</SetObjectID></Target>",
+        pos=(centro[0], centro[1], fondo_z + alto / 2), q=(1.0, 0.0, 0.0, 0.0))
+
+
 def zona_planeo(centro, prof, r_boca, giro_camara):
     """Planeo en un pozo vertical: centro = punto de la boca (Blender), prof = profundidad hasta el suelo.
     ChangeDiveBegin en la boca, ChangeDiveEndNoEvent a ~10 m del fondo, y un volumen de cámara que activa una cámara
@@ -798,6 +887,7 @@ def zona_planeo(centro, prof, r_boca, giro_camara):
         "<IsEnableCollision>false</IsEnableCollision><LineType>0</LineType><PositionList /><Priority>0</Priority><Range>300</Range>"
         f"<Shape_Type>0</Shape_Type><Target><SetObjectID>{id_cam}</SetObjectID></Target>",
         pos=(centro[0], centro[1], centro[2] - 2 - alto_vol / 2), q=(1.0, 0.0, 0.0, 0.0))
+    camara_aterrizaje(centro, fondo_z)
     # el planeo dura ~6 s en 110 m con los parámetros del nivel (Sonic.prm.xml de escenario_bpc)
     sumar_tiempo(prof / 18.0, prof)
     return fondo_z

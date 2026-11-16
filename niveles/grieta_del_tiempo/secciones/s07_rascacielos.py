@@ -48,8 +48,8 @@ def construir():
     for s in (60, 140):
         with en(t, s):
             tubo((0, 15, -25), (0, 15, 8), 4.0, "cpz", n=12)
-    t = carretera(50, ancho=16, mat="cpz")
-    for s, zona, lado in ((15, "cte", 4), (30, "cpz", -4)):
+    t = carretera(70, ancho=16, mat="cpz")
+    for s, zona, lado in ((5, "cte", 4), (15, "cpz", -4)):     # fuera del margen del cambio a 2D (a 58 m)
         with en(t, s):
             enemigo(zona, 0, lado)
     # bajada en 2D por los andamios de la fachada

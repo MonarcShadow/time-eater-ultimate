@@ -48,9 +48,9 @@ def construir():
     # islotes de hierba sobre un barranco de Mega Mack (huecos que se saltan sin ayuda)
     t = carretera(20, ancho=14, mat="ghz")
     plataformas_3d(4, largo=16, hueco=6, ancho=11, mats=("ghz", "cpz"), dz=(0, 1.0, -1.0), muerte=20, enemigos="ghz")
-    t = carretera(30, ancho=14, mat="ghz")                       # recta antes del tramo 2D
+    # recta antes del tramo 2D: 12 m hasta el cambio de modo + 40 m de margen sin huecos (el homing se corta al cruzarlo)
+    t = carretera(54, ancho=14, mat="ghz")
 
-    # tramo 2D: plataformas sobre tuberías y Mega Mack
-    t = tramo_2d("s1_2d", (0, 1.5, 3.0, 1.0, 2.5, 0, 1.5, 3.0, 1.5, 0), mats=("ghz", "cpz"), tubos="cpz", mat_salida="ghz", enemigos="ghz")
-    with en(t, 22):
-        egg_fighter(0, -3)                                       # Egg Fighters de Rooftop Run custodiando la entrada a la calle
+    # tramo 2D: plataformas sobre tuberías y Mega Mack (el Egg Fighter de la salida se quitó: estaba dentro del margen;
+    # la sección 2 ya empieza con uno)
+    tramo_2d("s1_2d", (0, 1.5, 3.0, 1.0, 2.5, 0, 1.5, 3.0, 1.5, 0), mats=("ghz", "cpz"), tubos="cpz", mat_salida="ghz", enemigos="ghz")
