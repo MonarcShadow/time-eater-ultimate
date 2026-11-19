@@ -44,6 +44,14 @@ function Write-Utf8([string]$path, [string]$text) { [IO.File]::WriteAllText($pat
 # --- 0. Comprobaciones ---------------------------------------------------------
 if (-not (Test-Path (Join-Path $modDir "mod.ini"))) { throw "No existe mod\mod.ini" }
 if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw "La versión debe ser X.Y.Z (ej. 0.1.2)" }
+# Salida de prueba de Grieta del Tiempo: una release no debe empezar en otra sección
+$confGrieta = Join-Path $raiz "niveles\grieta_del_tiempo\ajustes.conf"
+if (Test-Path $confGrieta) {
+    $lineaInicio = Get-Content $confGrieta -Encoding UTF8 | Where-Object { $_ -match '^\s*INICIO_SECCION\s*=' } | Select-Object -First 1
+    if ($lineaInicio -and ($lineaInicio -replace '#.*$', '') -match '=\s*([0-9.]+)' -and [double]$Matches[1] -notin 0, 1) {
+        throw "La salida de prueba está activa (ajustes.conf: $($lineaInicio.Trim())). Pon INICIO_SECCION = 0, reconstruye el nivel y vuelve a publicar."
+    }
+}
 
 $tags = @()
 if (-not $SoloPreparar) {

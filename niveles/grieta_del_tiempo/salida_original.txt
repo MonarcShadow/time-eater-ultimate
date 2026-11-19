@@ -1,0 +1,16 @@
+Salida original de "Grieta del Tiempo" (la del nivel publicado), guardada el 2026-11-18
+==========================================================================================
+
+Para volver a ella: en ajustes.conf poner  INICIO_SECCION = 0  y reconstruir (RECONSTRUIR_GRIETA.bat).
+
+Stage.stg.xml (bloque <Sonic>):
+    <Position><x>2</x><y>0.1</y><z>0</z></Position>
+    <Yaw>90</Yaw>
+    <Start>
+      <Mode>None</Mode>
+      <Speed>0</Speed>
+      <Time>0</Time>
+    </Start>
+
+En el generador (generar.py): INICIO_ORIGINAL = K.frame(2, 0, 0.1), con el cursor en el origen (rumbo 0):
+principio de la sección 1 "Colina contaminada", 2 m después del origen, mirando hacia +X.

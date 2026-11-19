@@ -40,11 +40,26 @@ base.crear_materiales(salida)
 # ==============================================================================================
 SECCIONES = ["s01_colina", "s02_calle", "s03_mar", "s04_autopista", "s05_fabrica", "s06_tanque", "s07_rascacielos",
              "s08_crisis", "s09_persecucion", "s10_jardin", "s11_reloj", "s12_caida", "s13_eco", "s14_blanco"]
-INICIO = K.frame(2, 0, 0.1)
+# Salida original del nivel: principio de la sección 1 (juego: x 2, y 0.1, z 0, Yaw 90). Copia en salida_original.txt.
+INICIO_ORIGINAL = K.frame(2, 0, 0.1)
 base.cambio_bgm(8)          # experimento 0.7.2: que la música suene desde la primera carga (ver base.cambio_bgm)
 for nombre in SECCIONES:
     importlib.import_module("secciones." + nombre).construir()
 FINAL = importlib.import_module("secciones.s14_blanco").FINAL[0]
+
+# Salida de prueba (ajustes.conf: INICIO_SECCION): aparecer en el checkpoint de una sección para no jugar todo el nivel
+n_inicio = int(base.AJUSTES["INICIO_SECCION"])
+if 1 < n_inicio <= len(base.INICIOS_SECCION):
+    INICIO, rumbo_inicio = base.INICIOS_SECCION[n_inicio - 1]
+    YAW_INICIO = (90 + math.degrees(rumbo_inicio) + 180) % 360 - 180
+    print(f"TEU_AVISO salida de prueba en el checkpoint de la sección {base.SECCIONES[n_inicio - 1][0]} "
+          "(poner INICIO_SECCION = 0 antes de publicar)")
+else:
+    if n_inicio not in (0, 1):
+        print(f"TEU_AVISO INICIO_SECCION = {n_inicio} no existe (hay {len(base.INICIOS_SECCION)} secciones): salida original")
+    INICIO, YAW_INICIO = INICIO_ORIGINAL, 90.0
+print(f"TEU_INICIO {'original' if INICIO is INICIO_ORIGINAL else f'sección {n_inicio}'}: "
+      f"juego ({a_juego(INICIO)[0]:.1f}, {a_juego(INICIO)[1]:.1f}, {a_juego(INICIO)[2]:.1f}), Yaw {YAW_INICIO:.1f}")
 
 # informes: tiempo estimado, solapes del recorrido y archivos de enemigos que debe cargar nivel.json
 base.informe_tiempo()
@@ -146,7 +161,7 @@ with open(os.path.join(dir_xml, "Stage.stg.xml"), "w", encoding="utf-8") as f:
 <Stage>
   <Sonic>
     {xyz('Position', inicio_j)}
-    <Yaw>90</Yaw>
+    <Yaw>{YAW_INICIO:g}</Yaw>
     <Start>
       <Mode>None</Mode>
       <Speed>0</Speed>

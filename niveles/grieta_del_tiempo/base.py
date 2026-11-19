@@ -25,6 +25,7 @@ AJUSTES_POR_DEFECTO = {
     "GIRO_CAMARA_RELOJ": 180.0,    # grados; planeo de la sección 11 ("casi ideal" en la prueba de la 0.7.2)
     "GIRO_CAMARA_PLANEO": 135.0,   # grados; planeo final (sección 12)
     "MARGEN_CAMBIO_2D": 40.0,      # m libres de huecos y enemigos a cada lado de un cambio 3D<->2D (~2 s corriendo)
+    "INICIO_SECCION": 0.0,         # 0 = salida original; N = checkpoint de la sección N (solo para pruebas)
 }
 
 
@@ -244,6 +245,7 @@ SECCIONES = []          # [nombre, segundos, metros]
 EJE = []                # (x, y, z, s_total, índice_sección) muestras del eje del recorrido
 S_TOTAL = [0.0]
 PM_ID = [0]
+INICIOS_SECCION = []    # (punto Blender del checkpoint, rumbo) de cada sección, en orden
 
 
 def registrar_eje(d):
@@ -267,6 +269,7 @@ def seccion(nombre, checkpoint=True):
     sobre el final de la carretera anterior."""
     if SECCIONES and checkpoint:
         punto_control(-6)
+    INICIOS_SECCION.append((K.frame(-6, 0, 0.1), K.th))      # salida de prueba (ajustes.conf: INICIO_SECCION)
     SECCIONES.append([nombre, 0.0, 0.0])
     ritmo("3d")
 
