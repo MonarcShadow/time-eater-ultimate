@@ -26,6 +26,8 @@ AJUSTES_POR_DEFECTO = {
     "GIRO_CAMARA_PLANEO": 135.0,   # grados; planeo final (sección 12)
     "MARGEN_CAMBIO_2D": 40.0,      # m libres de huecos y enemigos a cada lado de un cambio 3D<->2D (~2 s corriendo)
     "INICIO_SECCION": 0.0,         # 0 = salida original; N = checkpoint de la sección N (solo para pruebas)
+    "RAMPA_TEJADO_ALTO": 1.2,      # m; cuña a 45° en el borde de los tejados de la sección 9
+    "GIMMICKS_NUEVOS": 1.0,        # 1 = JumpPole, Pulley y WallJumpBlock (0.7.4, sin probar); 0 = sin ellos
 }
 
 
@@ -195,6 +197,11 @@ SOLIDO = Malla()      # recorrido + decoración sólida (visual y colisión)
 SOLO_VISUAL = Malla()  # rieles de grind, costuras, ventanas, agua (sin colisión)
 MUERTE = Malla()       # suelos de muerte bajo los huecos (solo colisión, tag DEAD)
 DANO = Malla()         # zonas que hacen daño, p. ej. lava (solo colisión, tag DAMAGE)
+# Agua para correr encima con el boost (solo colisión). Copian los dos mares de ssh200.phy.hkx; los tags AGUAMUERTE y
+# AGUAHONDA los añade construir_nivel.ps1 a los del HavokConverter.ini. Variante A = sea01 (material 12 muerte,
+# swa_col_player 5); B = sea02 (material 2 agua profunda, swa_col_player 10). La prueba de la 0.7.4 dirá cuál sirve.
+AGUA = {"A": Malla(), "B": Malla()}
+GUIAS = []             # (nombre, ID) de las splines guía (tirolinas): se declaran en Stage.stg.xml como <Guide>
 OBJETOS = []           # (xml) set data
 CURVAS = []            # (nombre, [[puntos riel 1], [puntos riel 2]?])
 QUICKSTEPS = []        # nombres de splines @QS (se declaran en Stage.stg.xml como SingleForward)
@@ -456,6 +463,28 @@ def charco_dano(adelante, lado, largo, ancho, mat="csc"):
     DANO.caja((x, y, z), (largo * 0.9, ancho * 0.9, 0.12), K.th, "gris")
 
 
+def cuna(adelante, lado, largo, ancho, alto, mat):
+    """Cuña sólida (rampa) que sube de 0 a 'alto' a lo largo de 'largo' hacia adelante. Con largo = alto, 45°."""
+    def p(u, v, w):
+        return K.frame(adelante + u, lado + v, w)
+    a0, b0 = p(0, -ancho / 2, 0), p(0, ancho / 2, 0)
+    a1, b1 = p(largo, -ancho / 2, 0), p(largo, ancho / 2, 0)
+    a2, b2 = p(largo, -ancho / 2, alto), p(largo, ancho / 2, alto)
+    dentro = p(largo * 0.66, 0, alto * 0.33)
+    for cara in ([a0, a2, b2, b0], [a1, b1, b2, a2], [a0, b0, b1, a1], [a0, a1, a2], [b0, b2, b1]):
+        fuera = tuple(2 * sum(q[k] for q in cara) / len(cara) - dentro[k] for k in range(3))
+        SOLIDO.cara(cara, mat, hacia=fuera)
+
+
+def agua(adelante, largo, ancho=20.0, variante="A", profundidad=12.0):
+    """Tramo de agua para cruzar corriendo con el boost: colisión de agua 0,2 m bajo la pista, placa azul visual y suelo
+    de muerte debajo (sin boost, Sonic se hunde). Ver AGUA."""
+    x, y, z = K.frame(adelante + largo / 2, 0, -0.2)
+    AGUA[variante].caja((x, y, z - 0.5), (largo, ancho, 0.5), K.th, "ssh")
+    visual(adelante + largo / 2, 0, -0.22, (largo, ancho, 0.04), "ssh")
+    suelo_muerte(adelante, largo, ancho=ancho + 20, profundidad=profundidad)
+
+
 def suelo_muerte(adelante, largo, ancho=30.0, profundidad=15.0):
     x, y, z = K.frame(adelante + largo / 2, 0, -profundidad)
     MUERTE.caja((x, y, z - 1), (largo, ancho, 1.0), K.th, "gris")
@@ -506,15 +535,20 @@ CAMPOS_RING = ("<GroundOffset>0</GroundOffset><InitDisp>false</InitDisp><IsCastS
                "<ResetTime>0</ResetTime><TreasureSearchHideType>0</TreasureSearchHideType>")
 
 
-def anillos(desde, hasta, cada=2.5, lado=0.0, arriba=0.8, tramo=None):
-    """Fila de anillos. Con tramo, 'desde'/'hasta' son distancias sobre el tramo (siguen curvas y pendientes)."""
+CAMPOS_RING_DASH = CAMPOS_RING.replace("<IsLightSpeedDashTarget>false", "<IsLightSpeedDashTarget>true")
+
+
+def anillos(desde, hasta, cada=2.5, lado=0.0, arriba=0.8, tramo=None, dash=False):
+    """Fila de anillos. Con tramo, 'desde'/'hasta' son distancias sobre el tramo (siguen curvas y pendientes).
+    dash=True: anillos para el light speed dash (IsLightSpeedDashTarget)."""
+    campos = CAMPOS_RING_DASH if dash else CAMPOS_RING
     d = desde
     while d <= hasta + 1e-6:
         if tramo:
             with en(tramo, d):
-                obj("Ring", CAMPOS_RING, 0, lado, arriba)
+                obj("Ring", campos, 0, lado, arriba)
         else:
-            obj("Ring", CAMPOS_RING, d, lado, arriba)
+            obj("Ring", campos, d, lado, arriba)
         d += cada
 
 
@@ -591,17 +625,17 @@ PLANTILLAS.setdefault("EnemyEFighter3D", CAMPOS_EFIGHTER)
 ZONAS_USADAS = set()
 
 
-def enemigo(zona, adelante=0.0, lado=0.0, arriba=None):
+def enemigo(zona, adelante=0.0, lado=0.0, arriba=None, pos=None):
     """Enemigo de la zona indicada, mirando hacia Sonic. Los puntos de patrulla (WayPointA/B) de la plantilla se
     sustituyen por la posición del enemigo (en los originales eran su propia posición).
-    arriba: altura sobre el cursor (por defecto, la de la tabla ENEMIGOS)."""
+    arriba: altura sobre el cursor (por defecto, la de la tabla ENEMIGOS). pos: punto Blender exacto (ignora el resto)."""
     if zona not in ENEMIGOS_ACTIVOS:
         zona = "euc"
     tipo, alto, _ = ENEMIGOS[zona]
     if arriba is not None:
         alto = arriba
     ZONAS_USADAS.add(zona)
-    pb = K.frame(adelante, lado, alto)
+    pb = pos if pos else K.frame(adelante, lado, alto)
     PUNTOS_ENEMIGO.append((pb[0], pb[1], pb[2], seccion_actual(), tipo))
     p = a_juego(pb)
     campos = PLANTILLAS[tipo]
@@ -609,7 +643,7 @@ def enemigo(zona, adelante=0.0, lado=0.0, arriba=None):
         m = re.search(f"<{wp}><x>([^<]*)</x><y>([^<]*)</y><z>([^<]*)</z></{wp}>", campos)
         if m and any(float(v) != 0.0 for v in m.groups()):
             campos = campos.replace(m.group(0), xyz(wp, p))
-    return obj(tipo, campos, adelante, lado, alto, q=q_yaw(math.pi))
+    return obj(tipo, campos, adelante, lado, alto, q=q_yaw(math.pi), pos=pos)
 
 
 def egg_fighter(adelante, lado=0.0):
@@ -821,6 +855,81 @@ def riel(nombre, largo, caida, plataforma_final=40, ancho=14, mat="gris"):
 
 
 # ----------------------------------------------------------------------------------------------
+# Gimmicks nuevos de la 0.7.4 (campos copiados de los originales; sin probar todavía en el juego).
+# Con GIMMICKS_NUEVOS = 0 en ajustes.conf no se colocan JumpPole, Pulley ni WallJumpBlock.
+# ----------------------------------------------------------------------------------------------
+def gimmicks_activos():
+    return AJUSTES["GIMMICKS_NUEVOS"] >= 0.5
+
+
+def barra_acrobacia(adelante, lado=0.0, arriba=2.0):
+    """JumpPole (barra de acrobacia, campos de ghz200): Sonic gira en ella y sale alto si salta en el momento justo."""
+    return obj("JumpPole", "<AddMaxVelocity>0</AddMaxVelocity><AddMinVelocity>0</AddMinVelocity><GroundOffset>0</GroundOffset>"
+               "<IsCastShadow>true</IsCastShadow><Range>30</Range>", adelante, lado, arriba, q=q_yaw())
+
+
+def panel_pared(adelante, arriba, alto, ancho, mira_atras):
+    """WallJumpBlock (ssh200): zona de salto en pared pegada a la cara de un muro, centrada en 'arriba'. Su cara útil
+    es -Z local; mira_atras=True: la cara mira hacia Sonic (muro delante); False: mira hacia adelante (muro detrás)."""
+    return obj("WallJumpBlock", f"<GroundOffset>0</GroundOffset><IsCastShadow>false</IsCastShadow><Range>30</Range>"
+               f"<SizeX>{ancho:g}</SizeX><SizeY>{alto:g}</SizeY><SizeZ>0.1</SizeZ>",
+               adelante, 0.0, arriba, q=q_yaw(0.0 if mira_atras else math.pi))
+
+
+def tirolina(nombre, largo, caida, alto_cable=2.0, llegada=40, ancho=14, mat="gris"):
+    """Tirolina (Pulley, campos de ssz200) desde el final de una carretera: baja 'caida' m en 'largo' m sobre el vacío.
+    La spline guía se declara en Stage.stg.xml (<Guide> con <ID>) y el Pulley la usa con PathID = ID. El Pulley va
+    2,5 m antes del inicio del cable y 0,8 m por encima, como en ssz200. Crea la carretera de llegada."""
+    p0 = K.frame(0.0, 0, alto_cable)
+    p1 = K.frame(largo * 0.5, 0, alto_cable - caida * 0.55)
+    p2 = K.frame(largo + 3.0, 0, alto_cable - caida)
+    id_guia = len(GUIAS) + 1
+    GUIAS.append((nombre, id_guia))
+    CURVAS.append((nombre, [[p0, p1, p2]]))
+    for a, b in ((p0, p1), (p1, p2)):                    # cable visual
+        SOLO_VISUAL.prisma((a[0], a[1], a[2] + 1.2), (b[0], b[1], b[2] + 1.2), 0.08, "costura", n=4, tapas=False)
+    if gimmicks_activos():
+        obj("Pulley", "<EndPosition>3</EndPosition><GroundOffset>0</GroundOffset><IsCastShadow>false</IsCastShadow>"
+            "<IsJumpCancel>true</IsJumpCancel><IsPoleAttackInvSide>false</IsPoleAttackInvSide><Length>1</Length>"
+            f"<MinInitVel>0</MinInitVel><PathID>{id_guia}</PathID><Range>100</Range><StartPosition>0</StartPosition>",
+            -2.5, 0.0, alto_cable + 0.8, q=q_yaw())
+    suelo_muerte(2, largo - 2, ancho=40, profundidad=caida + 15)
+    K.avanzar(largo, -caida)
+    sumar_tiempo(largo / VEL["grind"], largo)
+    return carretera(llegada, ancho=ancho, mat=mat)
+
+
+def pozo_pared_2d(nombre, alto=14.0, ancho=8.0, mat="gris", mat_panel="cpz"):
+    """Tramo 2D con un pozo de salto en pared (WallJumpBlock enfrentados, como en ssh200). Se llama al final de una
+    carretera recta de al menos 20 m. Respeta MARGEN_CAMBIO_2D: entrada plana, pozo de 8 m entre una pared delantera
+    (0..alto) y un bloque trasero colgado (3,5..alto+3, se entra por debajo), plataforma de arriba y vuelta a 3D a la
+    altura 'alto'. Sin huecos: si se falla, se vuelve al suelo del pozo. Devuelve el Tramo de salida."""
+    margen = AJUSTES["MARGEN_CAMBIO_2D"]
+    ritmo("2d")
+    a_2d(-12)
+    x_pozo = max(0.0, margen - 12.0)                       # inicio del pozo (cara del bloque trasero)
+    x_pared = x_pozo + 8.0                                  # cara de la pared delantera
+    arriba_largo = max(12.0, margen - 8.0) + 2.0           # plataforma de arriba (incluye los 2 m de la pared)
+    total = x_pared + arriba_largo
+    curva_recta(f"{nombre}@SV", -17, total + 20, rieles=(-1.0, 1.0))
+    plataforma(0, 0, 0, x_pared, ancho, alto=2, mat=mat)                             # suelo de entrada y del pozo
+    plataforma(x_pozo - 4, 0, alto + 3, 4, ancho, alto=alto - 0.5, mat=mat)          # bloque trasero (3,5 .. alto+3)
+    plataforma(x_pared, 0, alto, arriba_largo, ancho, alto=alto + 2, mat=mat)       # pared delantera + plataforma de arriba
+    anillos(2, x_pozo - 6, cada=2.0)
+    anillos(x_pared + 3, total - 3, cada=2.0, arriba=alto + 0.8)
+    for x, z0, z1 in ((x_pared - 0.06, 0.5, alto - 0.3), (x_pozo + 0.06, 3.8, alto + 2.7)):
+        visual(x, 0, z0, (0.1, 3.0, z1 - z0), mat_panel)                             # placas de color en las caras
+    if gimmicks_activos():
+        panel_pared(x_pared - 0.05, (0.5 + alto - 0.3) / 2, alto - 0.8, 3.0, mira_atras=True)
+        panel_pared(x_pozo + 0.05, (3.8 + alto + 2.7) / 2, alto - 1.1, 3.0, mira_atras=False)
+    K.avanzar(total, alto)
+    sumar_tiempo(total / VEL["2d"] + 4.0, total)          # ~4 s de saltos en el pozo
+    ritmo("3d")
+    a_2d(8, salida=True)
+    return carretera(8 + margen, ancho=14, mat=mat)
+
+
+# ----------------------------------------------------------------------------------------------
 # Planeo: ChangeDiveBegin/End + cámara desde arriba
 # ----------------------------------------------------------------------------------------------
 CAMPOS_DIVE = "<DefaultStatus>0</DefaultStatus><GroundOffset>0</GroundOffset><IsCastShadow>false</IsCastShadow><Shape_Type>0</Shape_Type>"
@@ -908,6 +1017,8 @@ def zona_planeo(centro, prof, r_boca, giro_camara):
         pos=(centro[0], centro[1], centro[2] - 2 - alto_vol / 2), q=(1.0, 0.0, 0.0, 0.0))
     camara_aterrizaje(centro, fondo_z)
     flecha_salida(centro, fondo_z)
+    # Spinner volando en el centro de la boca, 5 m por encima: un homing desde el borde deja caer centrado (0.7.4)
+    enemigo("sph", pos=(centro[0], centro[1], centro[2] + 5.0))
     # el planeo dura ~6 s en 110 m con los parámetros del nivel (Sonic.prm.xml de escenario_bpc)
     sumar_tiempo(prof / 18.0, prof)
     return fondo_z

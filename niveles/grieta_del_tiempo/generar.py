@@ -84,6 +84,9 @@ ob_rieles = SOLO_VISUAL.objeto("teu_rieles", col_nivel)
 ob_col = SOLIDO.objeto("teu_camino_col@ROCK", col_col)
 ob_muerte = MUERTE.objeto("teu_muerte_col@DEAD", col_col)
 ob_dano = DANO.objeto("teu_lava_col@DAMAGE", col_col)
+# agua para correr encima (tags propios que añade construir_nivel.ps1; ver base.AGUA)
+obs_agua = [base.AGUA[v].objeto(f"teu_agua_{v.lower()}_col@{tag}", col_col)
+            for v, tag in (("A", "AGUAMUERTE"), ("B", "AGUAHONDA")) if base.AGUA[v].f]
 ref = Malla()
 ref.caja(INICIO, (0.5, 0.5, 1.0), 0, "gris")
 r = ref.objeto("REF_Sonic", col_ref)
@@ -119,7 +122,7 @@ def exportar_fbx(objs, ruta):
 
 
 exportar_fbx([ob_solido, ob_rieles], os.path.join(salida, "teu_camino.fbx"))
-exportar_fbx([ob_col, ob_muerte, ob_dano], os.path.join(salida, "teu_camino_col.fbx"))
+exportar_fbx([ob_col, ob_muerte, ob_dano] + obs_agua, os.path.join(salida, "teu_camino_col.fbx"))
 
 herr = os.environ.get("TEU_HERRAMIENTAS") or os.path.join(carpeta_nivel, "..", "..", "herramientas")
 spec = importlib.util.spec_from_file_location("BlenderToXML", os.path.join(herr, "blender-scripts", "BlenderToXML.py"))
@@ -155,6 +158,12 @@ quicksteps = "".join(f"""
       <PathNum>3</PathNum>
       <Space>4</Space>
     </SingleForward>""" for n in QUICKSTEPS)
+# splines guía de las tirolinas: el Pulley las usa con PathID = ID (como GuidePath001..005 en ssz200)
+quicksteps += "".join(f"""
+    <Guide>
+      <Name>{n}</Name>
+      <ID>{i}</ID>
+    </Guide>""" for n, i in base.GUIAS)
 with open(os.path.join(dir_xml, "Stage.stg.xml"), "w", encoding="utf-8") as f:
     f.write(f"""<?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!-- Grieta del Tiempo (caja gris), generado por niveles/grieta_del_tiempo/generar.py -->

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.4
+Grieta del Tiempo:
+- **Cámaras de los planeos** ajustadas (giro 180 en los dos pozos). El pozo del reloj ahora mide 195 m (~10 s de planeo) y tiene una flecha morada en el fondo que apunta a la salida.
+- **Spinner en el centro de cada planeo**, 5 m por encima de la boca: con un homing desde el borde se cae centrado.
+- **Tejados (sección 9):** cada tejado tiene una pequeña rampa a 45° en el borde; yendo rápido (panel o boost) lanza al siguiente.
+- **Agua (sección 3):** dos tramos de 30 m de mar que se cruzan corriendo con el boost (dos variantes del agua de Seaside Hill, en prueba).
+- **Gimmicks nuevos, en prueba:**
+  - anillos de light speed dash sobre un hueco de 24 m (sección 9);
+  - barra de acrobacia (sección 9);
+  - pozo de salto en pared en 2D (sección 10);
+  - tirolina (sección 10).
+  - Si alguno cierra el juego, `GIMMICKS_NUEVOS = 0` en `ajustes.conf` los quita.
+- **Salida de prueba:** `INICIO_SECCION` en `ajustes.conf` hace aparecer a Sonic en el checkpoint de la sección indicada (0 = salida normal).
+
 ## 0.7.3
 Grieta del Tiempo:
 - **El homing ya no se corta en los cambios entre 3D y 2D:** hay 40 m (unos 2 s) sin huecos ni enemigos antes y después de cada cambio. La distancia se cambia en `ajustes.conf` (`MARGEN_CAMBIO_2D`).

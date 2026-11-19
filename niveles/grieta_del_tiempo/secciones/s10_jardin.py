@@ -22,6 +22,9 @@ def construir():
     anillos(10, 150, cada=7, tramo=t)
     t = carretera(40, ancho=14, mat="pla")
     t = tramo_2d("s10_2d", (0, 1.5, 3.0, 4.5, 3.0, 1.5, 3.0, 1.5, 0, 1.5), mats=("pla", "ssz"), mat_salida="ssz", enemigos="pla")
+    # pozo de salto en pared en 2D (nuevo en 0.7.4): se sube 14 m rebotando entre dos paredes de Planet Wisp
+    carretera(30, ancho=14, mat="ssz")
+    pozo_pared_2d("s10_pared", alto=14, mat="pla", mat_panel="cpz")
     t = carretera(120, ancho=18, mat="ssz", muros=0.8)
     cristales(t, 24)
     for s, lado in ((35, 7), (85, -7)):
@@ -35,7 +38,9 @@ def construir():
     t = carretera(100, ancho=16, giro_grados=30, mat="ssz", muros=1.0, muro_der=3.0)   # curva a la izquierda
     cristales(t, 25)
     anillos(10, 90, cada=6, tramo=t)
-    t = carretera(30, ancho=16, mat="pla")
+    # tirolina (nuevo en 0.7.4): 60 m bajando 15 m entre dos invernaderos
+    carretera(20, ancho=16, mat="pla")
+    tirolina("s10_tirolina", 60, 15, llegada=30, ancho=16, mat="pla")
     t = quickstep("s10_qs", 200, dz=-15, mat="pla", mat_muro="ssz")
     for s, lado in ((35, -4), (55, 4), (75, 0), (95, -4), (115, 4), (135, 0), (160, -4)):   # cristales en los carriles
         with en(t, s):
