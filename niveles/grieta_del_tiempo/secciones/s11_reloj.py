@@ -22,7 +22,8 @@ def construir():
     carretera(10, ancho=14, mat="costura", muros=0)
 
     # el pozo: una explanada alrededor de la boca, 8 ruedas dentadas como paredes y un túnel de salida abajo
-    R_BOCA, R_EXPL, PROF = 11.0, 22.0, 60
+    # 195 m: ~10 s de planeo (antes 60 m, ~3 s: la cámara pasaba casi todo el planeo en su transición de 2 s)
+    R_BOCA, R_EXPL, PROF = 11.0, 22.0, 195
     centro = K.frame(R_EXPL, 0, 0)
     fondo_z = centro[2] - PROF
     ang_entrada, ang_salida = K.th + math.pi, K.th
@@ -48,15 +49,16 @@ def construir():
         if dif_ang(ang, ang_salida) < math.radians(30):
             base_z = fondo_z + 9                              # túnel de salida
         SOLIDO.caja((cx, cy, base_z), (3, 9, tope - base_z), ang, "euc" if i % 2 else "sph")
-        # engranajes (solo visuales) en la pared, a distintas alturas: el reloj por dentro
-        SOLO_VISUAL.disco((centro[0] + 12 * math.cos(ang), centro[1] + 12 * math.sin(ang), centro[2] - 15 - 9 * (i % 4)),
-                          3.5, (math.cos(ang), math.sin(ang), 0.0), "euc", n=10, grosor=0.5)
-    for k in range(10):                                     # anillos en espiral
+        # engranajes (solo visuales) en la pared, cada ~20 m de profundidad: el reloj por dentro
+        for z in range(15 + 9 * (i % 4), PROF - 15, 20):
+            SOLO_VISUAL.disco((centro[0] + 12 * math.cos(ang), centro[1] + 12 * math.sin(ang), centro[2] - z),
+                              3.5, (math.cos(ang), math.sin(ang), 0.0), "euc", n=10, grosor=0.5)
+    for k in range(int((PROF - 20) / 4)):                  # anillos en espiral por todo el pozo
         a_esp = k * 0.8
-        obj("Ring", CAMPOS_RING, pos=(centro[0] + 4 * math.cos(a_esp), centro[1] + 4 * math.sin(a_esp), centro[2] - 10 - 3.5 * k))
-    for k in range(4):                                      # péndulos/escombros a esquivar, lejos del centro
+        obj("Ring", CAMPOS_RING, pos=(centro[0] + 4 * math.cos(a_esp), centro[1] + 4 * math.sin(a_esp), centro[2] - 10 - 4.0 * k))
+    for k in range(int((PROF - 37) / 25) + 1):             # péndulos/escombros a esquivar, lejos del centro
         a = k * math.pi / 2 + 0.4
-        SOLIDO.caja((centro[0] + 7 * math.cos(a), centro[1] + 7 * math.sin(a), centro[2] - 22 - 9 * k), (2.5, 2.5, 1.2), a, "sph")
+        SOLIDO.caja((centro[0] + 7 * math.cos(a), centro[1] + 7 * math.sin(a), centro[2] - 22 - 25 * k), (2.5, 2.5, 1.2), a, "sph")
     zona_planeo(centro, PROF, R_BOCA, GIRO_CAMARA_RELOJ)
     SOLIDO.caja((centro[0], centro[1], fondo_z - 2), (36, 36, 2), K.th, "euc")   # suelo del fondo
     MIN_Z[0] = min(MIN_Z[0], fondo_z - 2)

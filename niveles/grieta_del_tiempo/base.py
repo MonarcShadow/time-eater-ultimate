@@ -860,6 +860,22 @@ def camara_aterrizaje(centro, fondo_z, dist_salida=30.0, alto=10.0, lado=28.0):
         pos=(centro[0], centro[1], fondo_z + alto / 2), q=(1.0, 0.0, 0.0, 0.0))
 
 
+def flecha_salida(centro, fondo_z, largo=16.0):
+    """Flecha plana (solo visual, morada) en el suelo del pozo apuntando al túnel de salida (rumbo K.th). Referencia
+    para ajustar el giro de la cámara de planeo: es correcto cuando, durante el planeo, la flecha apunta hacia arriba
+    en la pantalla (prueba de la 0.7.3)."""
+    c, s = math.cos(K.th), math.sin(K.th)
+    z = fondo_z + 0.02
+    cuerpo = largo * 0.6
+    SOLO_VISUAL.caja((centro[0] - largo * 0.2 * c, centro[1] - largo * 0.2 * s, z), (cuerpo, largo * 0.16, 0.1), K.th, "costura")
+    punta = (centro[0] + largo * 0.5 * c, centro[1] + largo * 0.5 * s)
+    brazo = largo * 0.35
+    for lado in (1, -1):
+        a = K.th + math.pi + lado * math.radians(35)
+        SOLO_VISUAL.caja((punta[0] + brazo / 2 * math.cos(a), punta[1] + brazo / 2 * math.sin(a), z),
+                         (brazo, largo * 0.16, 0.1), a, "costura")
+
+
 def zona_planeo(centro, prof, r_boca, giro_camara):
     """Planeo en un pozo vertical: centro = punto de la boca (Blender), prof = profundidad hasta el suelo.
     ChangeDiveBegin en la boca, ChangeDiveEndNoEvent a ~10 m del fondo, y un volumen de cámara que activa una cámara
@@ -891,6 +907,7 @@ def zona_planeo(centro, prof, r_boca, giro_camara):
         f"<Shape_Type>0</Shape_Type><Target><SetObjectID>{id_cam}</SetObjectID></Target>",
         pos=(centro[0], centro[1], centro[2] - 2 - alto_vol / 2), q=(1.0, 0.0, 0.0, 0.0))
     camara_aterrizaje(centro, fondo_z)
+    flecha_salida(centro, fondo_z)
     # el planeo dura ~6 s en 110 m con los parámetros del nivel (Sonic.prm.xml de escenario_bpc)
     sumar_tiempo(prof / 18.0, prof)
     return fondo_z

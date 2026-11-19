@@ -17,6 +17,8 @@ escena = bpy.context.scene
 for ob in list(bpy.data.objects):
     if ob.name.startswith("teu_camino_col") or ob.name.startswith("teu_muerte"):
         ob.hide_render = True
+    elif ob.name.startswith("REF_"):          # caja de referencia de Sonic en la salida: taparía el suelo a los rayos
+        bpy.data.objects.remove(ob)           # (con una salida de prueba queda sobre un checkpoint); no se guarda
 
 
 def material(nombre, color):
