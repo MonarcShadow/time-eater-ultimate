@@ -4,6 +4,8 @@ from base import *  # noqa: F401,F403
 
 def construir():
     seccion("1 Colina contaminada", checkpoint=False)
+    # pared detrás de la salida (0.7.11): si Sonic corre hacia atrás ya no cae al vacío
+    decorado(-0.5, 0, -2, (1.0, 16, 12), "ghz")    # pegada al borde de la carretera
     t = carretera(40, ancho=14, mat="ghz")
     anillos(10, 30, tramo=t)
     for i, s in enumerate((10, 22, 34)):                         # tuberías de Chemical Plant reventando la colina:
@@ -31,15 +33,6 @@ def construir():
     t = carretera(30, ancho=14, mat="ghz")
     with en(t, 10):
         arco_costura(14)
-    # loop clásico de Green Hill (nuevo en 0.7.7): dos paneles para coger velocidad y una vuelta de radio 10 m
-    t = carretera(40, ancho=14, mat="ghz")
-    for s in (8, 24):
-        with en(t, s):
-            dash_panel(0)
-    anillos(30, 38, cada=2.0, tramo=t)
-    loop("s1_loop", radio=10, ancho=10, desplazamiento=14, mat="ghz")
-    carretera(20, ancho=14, mat="ghz")
-
     # colinas onduladas (nuevo en 0.7.0): Motoras de Green Hill y Landers de Chemical Plant entre las tuberías
     for k, dz in enumerate((6, -6, 5, -5)):
         t = carretera(45, ancho=16, dz=dz, mat="ghz", mat_muro="cpz")
@@ -56,8 +49,17 @@ def construir():
     # islotes de hierba sobre un barranco de Mega Mack (huecos que se saltan sin ayuda)
     t = carretera(20, ancho=14, mat="ghz")
     plataformas_3d(4, largo=16, hueco=6, ancho=11, mats=("ghz", "cpz"), dz=(0, 1.0, -1.0), muerte=20, enemigos="ghz")
-    # recta antes del tramo 2D: 12 m hasta el cambio de modo + 40 m de margen sin huecos (el homing se corta al cruzarlo)
-    t = carretera(54, ancho=14, mat="ghz")
+    # loop clásico de Green Hill (0.7.7; desde la 0.7.11 más grande, radio LOOP_RADIO, y su bajada lleva directo al
+    # tramo 2D): recta tras los islotes (40 m de margen sin huecos antes del cambio a 2D, el homing se corta al
+    # cruzarlo), dos paneles para coger velocidad y la vuelta
+    t = carretera(60, ancho=14, mat="ghz")
+    for s in (30, 46):
+        with en(t, s):
+            dash_panel(0)
+    anillos(50, 58, cada=2.0, tramo=t)
+    loop("s1_loop", radio=AJUSTES["LOOP_RADIO"], ancho=10, desplazamiento=14, mat="ghz")
+    # salida del modo dash a +6 y cambio a 2D a +10 (tramo_2d lo pone 12 m antes del final de esta carretera)
+    carretera(22, ancho=14, mat="ghz")
 
     # tramo 2D: plataformas sobre tuberías y Mega Mack (el Egg Fighter de la salida se quitó: estaba dentro del margen;
     # la sección 2 ya empieza con uno)

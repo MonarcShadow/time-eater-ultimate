@@ -36,9 +36,21 @@ AJUSTES_POR_DEFECTO = {
     "CAMARA_2D_PITCH": 10.0,       # grados mirando hacia abajo
     "CAMARA_2D_ALTURA": 1.5,       # m por encima de Sonic (TargetOffset_Up)
     "CAMARA_2D_GIRO": 0.0,         # grados de corrección del Yaw si la cámara no queda de lado
-    "LOOP_CAMARA_ALTO": 1.6,       # × radio: altura de las cámaras de los loops (último loop de ghz200)
-    "LOOP_CAMARA_LADO": 0.5,       # × radio: separación de esas cámaras desde el borde de la pista
-    "LOOP_CAMARA_PRIORIDAD": 3.0,  # Priority de sus volúmenes (ghz200 usa 3 y 5; con 1 no se imponía, 0.7.9)
+    "LOOP_RADIO": 15.0,            # m; loop de la sección 1 (10 hasta la 0.7.10)
+    # cámara de los loops = primer loop de ghz200 (ObjCameraPan 122609 + ChangeVolumeCamera 122608)
+    "LOOP_CAMARA_ADELANTO": 37.0,  # m de la cámara antes del centro del volumen
+    "LOOP_CAMARA_ALTO": 1.0,       # m sobre el suelo de la cámara y del centro del volumen
+    "LOOP_CAMARA_DISTANCIA": 10.0,
+    "LOOP_CAMARA_FOVY": 45.0,
+    "LOOP_CAMARA_VOL_LARGO": 50.0,
+    "LOOP_CAMARA_VOL_ANCHO": 8.0,
+    "LOOP_CAMARA_VOL_ALTO": 14.0,
+    "LOOP_CAMARA_PRIORIDAD": 1.0,
+    "LOOP_CAMARA_EASE": 0.6,
+    "RIEL_SECRETO_ANGULO": 20.0,   # grados a la izquierda del frente donde empieza el riel secreto (0.7.10: 45)
+    "RIEL_SECRETO_ALTO": 14.0,     # m sobre la explanada del inicio del riel secreto (0.7.10: 9,5)
+    "ENEMIGOS_2D_DOBLE_MIN": 3.0,  # plataformas 2D: 1 enemigo por plataforma y 2 en una de cada MIN..MAX
+    "ENEMIGOS_2D_DOBLE_MAX": 5.0,
     "RIEL_CAMARA_PITCH": 85.0,     # grados: cámara cenital del riel secreto (euc200 usa 85-89 en el riel de la torre)
     "RIEL_CAMARA_DISTANCIA": 6.0,  # m (euc200: 4-5)
     "LIGHT_DASH_SEPARACION": 1.1,  # m entre anillos de light dash (pla204: 1,13; con 1,5-2 m Sonic no seguía las curvas)
@@ -294,7 +306,9 @@ def seccion(nombre, checkpoint=True):
     sobre el final de la carretera anterior."""
     if SECCIONES and checkpoint:
         punto_control(-6)
-    INICIOS_SECCION.append((K.frame(-6, 0, 0.1), K.th))      # salida de prueba (ajustes.conf: INICIO_SECCION)
+    # salida de prueba (ajustes.conf: INICIO_SECCION); la de la sección 1 en la salida original (x 2), no detrás de la
+    # pared del inicio (0.7.11)
+    INICIOS_SECCION.append((K.frame(-6 if SECCIONES else 2, 0, 0.1), K.th))
     SECCIONES.append([nombre, 0.0, 0.0])
     ritmo("3d")
 
@@ -829,8 +843,8 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
     recta de al menos 20 m: el cambio a 2D va 12 m antes del final; la vuelta a 3D, 8 m dentro de la carretera de
     salida (30 m), que esta función también crea. alturas: altura de cada plataforma respecto al suelo (subidas de
     1,5 m como máximo, o un resorte en 'resortes' = índices de plataforma). Devuelve el Tramo de salida.
-    enemigos: zona (o None): un enemigo en el centro de cada plataforma y un Spinner volando sobre cada hueco, para
-    poder encadenar homing attacks (pedido en la prueba de la 0.7.1).
+    enemigos: zona (o None): un enemigo en el centro de cada plataforma y dos en una de cada 3-5 (0.7.11; antes
+    había además un Spinner sobre cada hueco).
     Margen (0.7.3): un homing que cruza el cambio de modo se cancela, así que la primera plataforma empieza con una
     pista de MARGEN_CAMBIO_2D - 12 m sin enemigos, la última mide MARGEN - 8 m y no lleva enemigo, y la carretera de
     salida mide 8 + MARGEN m (lo que pongan las secciones encima debe ir más allá; generar.py lo comprueba)."""
@@ -849,6 +863,11 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
     camara_2d(-12, total + 8, min(alturas) - 25, max(alturas) + 30)
     if n > 1:                                               # suelo de muerte solo entre el primer y el último hueco
         suelo_muerte(largos[0], total - largos[0] - largos[-1], profundidad=15 + max(alturas))
+    # enemigos (0.7.11): 1 por plataforma y 2 en una de cada MIN..MAX (ciclo medio, mínimo, máximo: 4, 3, 5), sin
+    # los Spinners sobre cada hueco de antes (eran demasiados)
+    d_min, d_max = int(AJUSTES["ENEMIGOS_2D_DOBLE_MIN"]), int(AJUSTES["ENEMIGOS_2D_DOBLE_MAX"])
+    ciclo_doble = [max(1, (d_min + d_max) // 2), max(1, d_min), max(1, d_max)]
+    siguiente_doble = ciclo_doble[0]                        # número de plataforma (desde 1) con 2 enemigos
     x = 0.0
     for i, h in enumerate(alturas):
         largo = largos[i]
@@ -858,10 +877,15 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
             resorte_vertical(x + largo - 1.5, 0, h, velocidad=26)
         if tubos:
             tubo((x + largo - largo_plat / 2, 0, h - 16), (x + largo - largo_plat / 2, 0, h - 3.1), 1.8, tubos)
-        if enemigos:
-            if i < n - 1:                                   # en el centro de la parte normal de la plataforma
-                enemigo(enemigos, x + largo - largo_plat / 2, 0, arriba=h + ENEMIGOS[enemigos][1])
-                enemigo("sph", x + largo + hueco / 2, 0, arriba=max(h, alturas[i + 1]) + 4.0)
+        if enemigos and i < n - 1:                          # en el centro de la parte normal de la plataforma
+            centro_p = x + largo - largo_plat / 2
+            if i + 1 == siguiente_doble:                    # 2 en una de cada MIN..MAX plataformas (0.7.11)
+                for d in (-2.5, 2.5):
+                    enemigo(enemigos, centro_p + d, 0, arriba=h + ENEMIGOS[enemigos][1])
+                ciclo_doble.append(ciclo_doble.pop(0))
+                siguiente_doble += ciclo_doble[0]
+            else:
+                enemigo(enemigos, centro_p, 0, arriba=h + ENEMIGOS[enemigos][1])
         if i in huecos_salvavidas and gimmicks_activos():
             # JumpPole de salvavidas (0.7.7): pegado a la cara de la plataforma siguiente, bajo su borde. Si Sonic cae
             # por el hueco lo coge, gira y sale hacia arriba. Un pilar prolonga la cara 3 m hacia abajo como pared.
@@ -900,10 +924,10 @@ def plataformas_3d(n, largo=18.0, hueco=7.0, ancho=10.0, mats=("gris",), dz=(0.0
     ritmo("3d")
 
 
-def camara_pan(adelante, lado, arriba, distancia=6.0):
+def camara_pan(adelante, lado, arriba, distancia=6.0, fovy=45.0):
     """ObjCameraPan fija en un punto que mira a Sonic (CameraPositionMode 1, campos de ghz200). Devuelve su ID."""
     return obj("ObjCameraPan", f"<CameraPositionMode>1</CameraPositionMode><Distance>{distancia:g}</Distance><Ease_Time_Enter>0</Ease_Time_Enter>"
-               "<Ease_Time_Leave>0</Ease_Time_Leave><FaceType>0</FaceType><Fovy>45</Fovy><GroundOffset>0</GroundOffset>"
+               f"<Ease_Time_Leave>0</Ease_Time_Leave><FaceType>0</FaceType><Fovy>{fovy:g}</Fovy><GroundOffset>0</GroundOffset>"
                "<IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow><IsCollision>false</IsCollision>"
                "<IsControllable>false</IsControllable><OffsetPitch>0</OffsetPitch><OffsetYaw>0</OffsetYaw><Radius>1</Radius>"
                "<Range>10100</Range><Target><SetObjectID>0</SetObjectID></Target><TargetOffset_Front>0</TargetOffset_Front>"
@@ -912,31 +936,21 @@ def camara_pan(adelante, lado, arriba, distancia=6.0):
                "<VelOffsetXYZ>0</VelOffsetXYZ><ZRot>0</ZRot>", adelante, lado, arriba, q=(1.0, 0.0, 0.0, 0.0))
 
 
-def camara_loop(adelante, lado_entrada, lado_salida, arriba, radio, ancho_pista):
-    """Cámaras de un loop como el ÚLTIMO loop grande de ghz200 (0.7.10; la Pan frontal del primer loop, con Priority 1,
-    no se imponía a la cámara del modo dash). Allí hay 4 ObjCameraPan a los lados del loop, fuera de la pista y altas,
-    que acompañan la vuelta (las del lado de la entrada primero, la del lado de la salida al final), con volúmenes de
-    Priority 3 y 5. Aquí, con el loop centrado en 'adelante' (sube por delante del centro y baja por detrás):
-      A: subida (mitad delantera), cámara fuera de la pista por el lado de la entrada;
-      B: cima y bajada (mitad trasera), cámara por el lado de la salida;
-      C: salida a ras de suelo, cámara por el lado de la salida a media altura, prioridad +2.
-    Altura y separación en ajustes.conf (LOOP_CAMARA_*). Al dejar los volúmenes vuelve la cámara normal detrás."""
-    alto, sep = AJUSTES["LOOP_CAMARA_ALTO"] * radio, ancho_pista / 2 + AJUSTES["LOOP_CAMARA_LADO"] * radio
-    prio = int(AJUSTES["LOOP_CAMARA_PRIORIDAD"])
-    medio = (lado_entrada + lado_salida) / 2
-    ancho_vol = abs(lado_salida - lado_entrada) + ancho_pista + 4
-    alto_vol = 2 * radio + 3
-    z_vol = arriba + 1.5 + (alto_vol - 1.5) / 2                     # desde 1,5 m: al llegar por el suelo aún no cambia
-    signo = 1.0 if lado_salida >= lado_entrada else -1.0
-    id_a = camara_pan(adelante, lado_entrada - signo * sep, arriba + alto)
-    volumen_camara(id_a, adelante + (radio + 2) / 2, medio, z_vol, radio + 2, ancho_vol, alto_vol - 1.5,
-                   entrar=0.8, salir=0.5, prioridad=prio)
-    id_b = camara_pan(adelante, lado_salida + signo * sep, arriba + alto)
-    volumen_camara(id_b, adelante - (radio + 2) / 2, medio, z_vol, radio + 2, ancho_vol, alto_vol - 1.5,
-                   entrar=0.8, salir=0.5, prioridad=prio)
-    id_c = camara_pan(adelante + radio + 6, lado_salida + signo * sep, arriba + radio * 0.8)
-    volumen_camara(id_c, adelante + (radio + 6) / 2, lado_salida, arriba + 1.0, radio + 6, ancho_pista + 2, 4.0,
-                   entrar=0.8, salir=0.5, prioridad=prio + 2)
+def camara_loop(adelante, lado_entrada, lado_salida, arriba):
+    """Cámara de un loop como el PRIMER loop de ghz200 (0.7.11, a petición del usuario; la 0.7.10 copiaba el último):
+    una ObjCameraPan (122609: CameraPositionMode 1, Distance 10, Fovy 45) en el eje, a ras de suelo y 37 m antes del
+    centro de su ChangeVolumeCamera (122608: 50 m en el sentido de la marcha × 8 × 14, Priority 1, Ease 0,6), que está
+    a la misma altura que la cámara. Aquí el volumen se centra en el loop ('adelante') y todo sale de ajustes.conf
+    (LOOP_CAMARA_*), con los valores de ghz200 por defecto."""
+    a = AJUSTES
+    # en el eje de llegada, como en ghz200 (centrado entre entrada y salida, el volumen de 8 m dejaba fuera la entrada)
+    eje = lado_entrada
+    z = arriba + a["LOOP_CAMARA_ALTO"]
+    id_pan = camara_pan(adelante - a["LOOP_CAMARA_ADELANTO"], eje, z, distancia=a["LOOP_CAMARA_DISTANCIA"],
+                        fovy=a["LOOP_CAMARA_FOVY"])
+    volumen_camara(id_pan, adelante, eje, z, a["LOOP_CAMARA_VOL_LARGO"], a["LOOP_CAMARA_VOL_ANCHO"],
+                   a["LOOP_CAMARA_VOL_ALTO"], entrar=a["LOOP_CAMARA_EASE"], salir=a["LOOP_CAMARA_EASE"],
+                   prioridad=int(a["LOOP_CAMARA_PRIORIDAD"]))
 
 
 EXTRA_DASH = ("<Template>1</Template><m_CurveCorrectionForce>0</m_CurveCorrectionForce><m_IsLimitEdge>true</m_IsLimitEdge>"
@@ -976,7 +990,7 @@ def loop(nombre, radio=10.0, ancho=10.0, desplazamiento=14.0, mat="gris"):
         pts = [K.frame(-8, v, 0)] + [p(2 * math.pi * k / n, v) for k in range(n + 1)] + [K.frame(8, desplazamiento + v, 0)]
         rieles.append(pts)
     CURVAS.append((f"{nombre}@DP", rieles))
-    camara_loop(0.0, 0.0, desplazamiento, 0.0, radio, ancho)
+    camara_loop(0.0, 0.0, desplazamiento, 0.0)
     cambio_modo("ChangeMode_3DtoDash", -6, ancho=ancho + 6, alto=25, extra=EXTRA_DASH)
     K.x -= desplazamiento * math.sin(K.th)
     K.y += desplazamiento * math.cos(K.th)
@@ -1021,7 +1035,7 @@ def riel(nombre, largo, caida, plataforma_final=40, ancho=14, mat="gris", vuelta
         puntos = [p0, p1] + pts_loop + [K.frame(x1 + 0.5, desplazamiento, -caida * 0.4 - 0.1), p2]
         f = (x1 - 8 + 6) / (x1 + 6)                             # 8 m antes del loop, sobre el riel
         grind_dash(tuple(a + (b - a) * f for a, b in zip(p0, p1)))
-        camara_loop(x1, 0.0, desplazamiento, -caida * 0.4, vuelta, 1.0)   # cámaras del último loop de ghz200 (0.7.10)
+        camara_loop(x1, 0.0, desplazamiento, -caida * 0.4)   # cámara del primer loop de ghz200 (0.7.11)
     else:
         puntos = [p0, p1, p2]
     riel_grind(f"{nombre}@GR", puntos)

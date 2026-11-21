@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.11
+Grieta del Tiempo:
+- **Loop de Green Hill (sección 1):** más grande (radio de 15 m en lugar de 10) y su bajada lleva directo al tramo 2D. La cámara vuelve a ser la del primer loop del Green Hill original. Sus valores originales están en `ajustes.conf` (`LOOP_*`) para retocarlos.
+- **Pared detrás de la salida del nivel:** si corres hacia atrás al empezar, ya no caes al vacío.
+- **Plataformas 2D:** menos enemigos, uno por plataforma y dos de vez en cuando (cada 3 a 5 plataformas). Ya no hay Spinners sobre cada hueco (`ENEMIGOS_2D_*`).
+- **Riel secreto de la torre:** empieza casi de frente y más alto, y los dos Spinners que llevan a él están más separados, así que se ven al encadenarlos (`RIEL_SECRETO_*`).
+
 ## 0.7.10
 Grieta del Tiempo:
 - **Cámara de los loops:** como en el último loop grande de Green Hill. Cámaras fijas a los lados del loop, altas y fuera de la pista, que siguen a Sonic durante la vuelta; al salir vuelve la cámara normal. Se ajusta en `ajustes.conf` (`LOOP_CAMARA_*`).

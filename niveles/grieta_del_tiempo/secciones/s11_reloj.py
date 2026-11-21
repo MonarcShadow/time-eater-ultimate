@@ -9,24 +9,28 @@ GIRO_CAMARA_RELOJ = AJUSTES["GIRO_CAMARA_RELOJ"]
 
 
 def riel_secreto(centro, fondo_z, radio=24.0, paso=4.0):
-    """Riel semioculto (0.7.7): sale de encima de la torre, en diagonal delante-izquierda de la boca (desde la 0.7.10;
-    antes a 90° de la entrada; desde la 0.7.9 solo se llega encadenando homing con dos Spinners), baja en espiral por
+    """Riel semioculto (0.7.7): sale de encima de la torre, casi de frente y 14 m sobre la explanada (0.7.11; ajustes
+    RIEL_SECRETO_*; desde la 0.7.9 solo se llega encadenando homing con dos Spinners), baja en espiral por
     FUERA de la torre con cámara cenital fija (radio 24 m; la
     explanada llega a 22 y las paredes a 15,5), da 2 vueltas, se abre
     hacia el túnel de salida y aterriza en la carretera de salida a ~46 m del centro, más allá del checkpoint del fondo:
     más rápido, pero sin ese checkpoint. Un engranaje decorativo en el borde lo tapa a medias. No suma tiempo (atajo)."""
     th = K.th                                            # rumbo de salida (el túnel está en esta dirección)
-    a0 = th + math.pi / 4                                # diagonal delante-izquierda (0.7.10; antes del todo a la izquierda)
-    # 0.7.9: empieza ENCIMA de la torre, a 11 m del centro y 9,5 m sobre la explanada (las paredes llegan a +8):
-    # solo se llega encadenando homing, Spinner del centro (+5, zona_planeo) → Spinner lateral (+8) → riel.
-    enemigo("sph", pos=(centro[0] + 7 * math.cos(a0), centro[1] + 7 * math.sin(a0), centro[2] + 8.0))
+    # dirección del inicio: RIEL_SECRETO_ANGULO grados a la izquierda del frente (0.7.11: 20; 0.7.10: 45; 0.7.9: 90),
+    # para que los Spinners y el riel queden delante de la cámara al llegar
+    a0 = th + math.radians(AJUSTES["RIEL_SECRETO_ANGULO"])
+    alto = AJUSTES["RIEL_SECRETO_ALTO"]                  # m sobre la explanada (0.7.11: 14; antes 9,5)
+    # empieza ENCIMA de la torre: solo se llega encadenando homing, Spinner del centro (+5, zona_planeo) → Spinner
+    # lateral → riel. 0.7.11: el lateral pasa de r 7 / +8 a r 13 / alto − 4 (~14 m del central; antes ~7,6 m, tan
+    # juntos que no se veían en cámara al encadenarlos)
+    enemigo("sph", pos=(centro[0] + 13 * math.cos(a0), centro[1] + 13 * math.sin(a0), centro[2] + alto - 4.0))
     plano = []                                           # (x, y) en planta
-    for r in (11.0, 14.0, 17.0):                         # tramo radial hacia fuera, por encima de las paredes
+    for r in (17.0, 19.0, 21.0):                         # tramo radial hacia fuera, por encima de la explanada
         plano.append((centro[0] + r * math.cos(a0), centro[1] + r * math.sin(a0)))
     for k in range(1, 9):                                # curva suave de radial a tangente (1/8 de vuelta)
         u = k / 8
         a = a0 - (math.pi / 4) * u * u
-        r = 17 + (radio - 17) * (1 - (1 - u) ** 2)
+        r = 21 + (radio - 21) * (1 - (1 - u) ** 2)
         plano.append((centro[0] + r * math.cos(a), centro[1] + r * math.sin(a)))
     a_ini = a0 - math.pi / 4
     a_fin = th + math.pi / 4                             # fin de la espiral; después, curva de apertura hasta 'th'
@@ -45,7 +49,7 @@ def riel_secreto(centro, fondo_z, radio=24.0, paso=4.0):
     largos = [0.0]
     for p, q in zip(plano, plano[1:]):
         largos.append(largos[-1] + math.hypot(q[0] - p[0], q[1] - p[1]))
-    z0, z1 = centro[2] + 9.5, fondo_z + 0.35
+    z0, z1 = centro[2] + alto, fondo_z + 0.35
     puntos = [(x, y, z0 + (z1 - z0) * s / largos[-1]) for (x, y), s in zip(plano, largos)]
     puntos[-1] = (puntos[-1][0], puntos[-1][1], z1)
     riel_grind("s11_riel_secreto@GR", puntos)
