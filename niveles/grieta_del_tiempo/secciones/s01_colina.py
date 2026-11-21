@@ -58,9 +58,13 @@ def construir():
             dash_panel(0)
     anillos(50, 58, cada=2.0, tramo=t)
     loop("s1_loop", radio=AJUSTES["LOOP_RADIO"], ancho=10, desplazamiento=14, mat="ghz")
-    # salida del modo dash a +6 y cambio a 2D a +10 (tramo_2d lo pone 12 m antes del final de esta carretera)
-    carretera(22, ancho=14, mat="ghz")
+    # 0.7.12: al pie del loop, embudo de 12 a 6 m (el ancho de las plataformas 2D) con paredes sólidas de 4 m, y el
+    # cambio a 2D 2,8 m después de la salida del modo dash (+6), como al pie del último loop de ghz200. En la 0.7.11
+    # la carretera de salida medía 14 m, el 2D llegaba a +10 y se podía caer al vacío por los lados.
+    EMBUDO, CAMBIO_2D = 24.0, 6.0 + 2.8
+    carretera(EMBUDO, ancho=12, ancho_final=6, muros=4, muro_solido=True, mat="ghz", mat_muro="cpz")
 
     # tramo 2D: plataformas sobre tuberías y Mega Mack (el Egg Fighter de la salida se quitó: estaba dentro del margen;
     # la sección 2 ya empieza con uno)
-    tramo_2d("s1_2d", (0, 1.5, 3.0, 1.0, 2.5, 0, 1.5, 3.0, 1.5, 0), mats=("ghz", "cpz"), tubos="cpz", mat_salida="ghz", enemigos="ghz")
+    tramo_2d("s1_2d", (0, 1.5, 3.0, 1.0, 2.5, 0, 1.5, 3.0, 1.5, 0), mats=("ghz", "cpz"), tubos="cpz", mat_salida="ghz",
+             enemigos="ghz", cambio=CAMBIO_2D - EMBUDO, cambio_ghz=True)

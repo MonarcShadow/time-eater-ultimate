@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.12
+Grieta del Tiempo:
+- **Salida del loop (sección 1):** el paso a 2D ocurre justo al pie del loop, como en el último loop del Green Hill original. El terreno de salida es un embudo que se estrecha hasta el ancho de las plataformas 2D, con paredes sólidas a los lados: ya no se cae al vacío.
+- **Plataformas 3D:** sin enemigos de tierra, que salían despedidos con el homing y rompían la cadena. Ahora hay un Spinner volando por plataforma.
+- **Plataformas 2D:** vuelven a tener los enemigos de la 0.7.10.
+
 ## 0.7.11
 Grieta del Tiempo:
 - **Loop de Green Hill (sección 1):** más grande (radio de 15 m en lugar de 10) y su bajada lleva directo al tramo 2D. La cámara vuelve a ser la del primer loop del Green Hill original. Sus valores originales están en `ajustes.conf` (`LOOP_*`) para retocarlos.

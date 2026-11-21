@@ -49,8 +49,6 @@ AJUSTES_POR_DEFECTO = {
     "LOOP_CAMARA_EASE": 0.6,
     "RIEL_SECRETO_ANGULO": 20.0,   # grados a la izquierda del frente donde empieza el riel secreto (0.7.10: 45)
     "RIEL_SECRETO_ALTO": 14.0,     # m sobre la explanada del inicio del riel secreto (0.7.10: 9,5)
-    "ENEMIGOS_2D_DOBLE_MIN": 3.0,  # plataformas 2D: 1 enemigo por plataforma y 2 en una de cada MIN..MAX
-    "ENEMIGOS_2D_DOBLE_MAX": 5.0,
     "RIEL_CAMARA_PITCH": 85.0,     # grados: cámara cenital del riel secreto (euc200 usa 85-89 en el riel de la torre)
     "RIEL_CAMARA_DISTANCIA": 6.0,  # m (euc200: 4-5)
     "LIGHT_DASH_SEPARACION": 1.1,  # m entre anillos de light dash (pla204: 1,13; con 1,5-2 m Sonic no seguía las curvas)
@@ -413,10 +411,14 @@ class en:
 
 
 def carretera(largo, ancho=12.0, dz=0.0, giro_grados=0.0, muros=1.2, mat="gris", mat_muro=None, paso=4.0, grosor=2.0,
-              muro_izq=None, muro_der=None):
+              muro_izq=None, muro_der=None, ancho_final=None, muro_solido=False):
     """Tramo de carretera desde el cursor: largo (m), desnivel total dz, giro total (curva suave). Devuelve un Tramo.
-    muro_izq / muro_der (altura en m) permiten un muro distinto por lado; izquierda = lado +, derecha = lado −."""
-    alturas_muro = {ancho / 2: muros if muro_izq is None else muro_izq, -ancho / 2: muros if muro_der is None else muro_der}
+    muro_izq / muro_der (altura en m) permiten un muro distinto por lado; izquierda = lado +, derecha = lado −.
+    ancho_final (0.7.12): el ancho pasa de 'ancho' a 'ancho_final' a lo largo del tramo (embudo).
+    muro_solido (0.7.12): muros como cajas de 1 m de grosor por fuera del borde en lugar de caras dobles (en el mismo
+    plano, a gran velocidad se atravesaban)."""
+    alturas_muro = {1: muros if muro_izq is None else muro_izq, -1: muros if muro_der is None else muro_der}
+    a_fin = ancho if ancho_final is None else ancho_final
     n = max(1, int(math.ceil(largo / paso)))
     giro = math.radians(giro_grados)
     secciones = []
@@ -431,20 +433,29 @@ def carretera(largo, ancho=12.0, dz=0.0, giro_grados=0.0, muros=1.2, mat="gris",
     for (x0, y0, z0, t0, s0), (x1, y1, z1, t1, s1) in zip(secciones, secciones[1:]):
         def borde(x, y, z, t, lado, h):
             return (x - lado * math.sin(t), y + lado * math.cos(t), z + h)
-        a, b = borde(x0, y0, z0, t0, -ancho / 2, 0), borde(x1, y1, z1, t1, -ancho / 2, 0)
-        c, d = borde(x1, y1, z1, t1, ancho / 2, 0), borde(x0, y0, z0, t0, ancho / 2, 0)
-        uvs = [(s0 / 4, -ancho / 8), (s1 / 4, -ancho / 8), (s1 / 4, ancho / 8), (s0 / 4, ancho / 8)]
+        w0 = ancho + (a_fin - ancho) * s0 / largo                                    # ancho en cada extremo
+        w1 = ancho + (a_fin - ancho) * s1 / largo
+        a, b = borde(x0, y0, z0, t0, -w0 / 2, 0), borde(x1, y1, z1, t1, -w1 / 2, 0)
+        c, d = borde(x1, y1, z1, t1, w1 / 2, 0), borde(x0, y0, z0, t0, w0 / 2, 0)
+        uvs = [(s0 / 4, -w0 / 8), (s1 / 4, -w1 / 8), (s1 / 4, w1 / 8), (s0 / 4, w0 / 8)]
         SOLIDO.quad(a, b, c, d, mat, uvs)                                            # superficie
-        ab, bb = borde(x0, y0, z0, t0, -ancho / 2, -grosor), borde(x1, y1, z1, t1, -ancho / 2, -grosor)
-        cb, db = borde(x1, y1, z1, t1, ancho / 2, -grosor), borde(x0, y0, z0, t0, ancho / 2, -grosor)
+        ab, bb = borde(x0, y0, z0, t0, -w0 / 2, -grosor), borde(x1, y1, z1, t1, -w1 / 2, -grosor)
+        cb, db = borde(x1, y1, z1, t1, w1 / 2, -grosor), borde(x0, y0, z0, t0, w0 / 2, -grosor)
         SOLIDO.quad(db, cb, bb, ab, mat)                                             # fondo
         SOLIDO.quad(ab, bb, b, a, mat)                                               # lateral izq.
         SOLIDO.quad(c, cb, db, d, mat)                                               # lateral der.
-        for lado, alto_muro in alturas_muro.items():
+        for signo, alto_muro in alturas_muro.items():
             if not alto_muro:
                 continue
-            p0, p1 = borde(x0, y0, z0, t0, lado, 0), borde(x1, y1, z1, t1, lado, 0)
-            q0, q1 = borde(x0, y0, z0, t0, lado, alto_muro), borde(x1, y1, z1, t1, lado, alto_muro)
+            p0, p1 = borde(x0, y0, z0, t0, signo * w0 / 2, 0), borde(x1, y1, z1, t1, signo * w1 / 2, 0)
+            if muro_solido:                          # caja de 1 m de grosor por fuera del borde, desde el fondo
+                e0, e1 = borde(x0, y0, z0, t0, signo * (w0 / 2 + 0.5), 0), borde(x1, y1, z1, t1, signo * (w1 / 2 + 0.5), 0)
+                largo_s = math.hypot(e1[0] - e0[0], e1[1] - e0[1])
+                SOLIDO.caja(((e0[0] + e1[0]) / 2, (e0[1] + e1[1]) / 2, min(e0[2], e1[2]) - grosor),
+                            (largo_s + 0.3, 1.0, alto_muro + grosor + abs(e1[2] - e0[2])),
+                            math.atan2(e1[1] - e0[1], e1[0] - e0[0]), mm)
+                continue
+            q0, q1 = borde(x0, y0, z0, t0, signo * w0 / 2, alto_muro), borde(x1, y1, z1, t1, signo * w1 / 2, alto_muro)
             SOLIDO.quad(p0, p1, q1, q0, mm)          # dos caras: se ve y colisiona desde ambos lados
             SOLIDO.quad(p1, p0, q0, q1, mm)
     MIN_Z[0] = min(MIN_Z[0], min(sec[2] for sec in secciones) - grosor)
@@ -781,7 +792,7 @@ def grind_dash(pos_blender, velocidad=60, giro=0.0):
         pos=pos_blender, q=q_yaw(giro))
 
 
-def cambio_modo(tipo, adelante, salida=False, ancho=30, alto=40, extra="", arriba=0.0):
+def cambio_modo(tipo, adelante, salida=False, ancho=30, alto=40, extra="", arriba=0.0, cambiar_camara=True):
     """Trigger de cambio de modo. Cruzarlo en su dirección activa el modo; un trigger girado 180° (salida)
     se cruza 'por detrás' y devuelve al modo 3D normal."""
     p = K.frame(adelante, 0, arriba)
@@ -792,7 +803,7 @@ def cambio_modo(tipo, adelante, salida=False, ancho=30, alto=40, extra="", arrib
     q = q_yaw(math.pi if salida else 0.0)
     campos = (f"<Collision_Height>{alto}</Collision_Height><Collision_Width>{ancho}</Collision_Width><GroundOffset>0</GroundOffset>"
               f"<IsCastShadow>true</IsCastShadow><Range>100</Range>{xyz('TargetDirection', destino)}"
-              "<m_IsChangeCamera>true</m_IsChangeCamera><m_IsEnableFromBack>true</m_IsEnableFromBack>"
+              f"<m_IsChangeCamera>{'true' if cambiar_camara else 'false'}</m_IsChangeCamera><m_IsEnableFromBack>true</m_IsEnableFromBack>"
               f"<m_IsEnableFromFront>true</m_IsEnableFromFront>{extra}")
     obj(tipo, campos, adelante, 0, arriba, q=q)
 
@@ -838,36 +849,39 @@ def riel_grind(nombre, puntos):
 # Patrones de recorrido reutilizables
 # ----------------------------------------------------------------------------------------------
 def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, ancho=6.0, tubos=None,
-             resortes=(), ancho_salida=14, mat_salida="gris", enemigos=None):
+             resortes=(), ancho_salida=14, mat_salida="gris", enemigos=None, cambio=-12.0, cambio_ghz=False):
     """Tramo de plataformas en 2D (patrón de la sección 1, probado en el juego). Se llama al final de una carretera
     recta de al menos 20 m: el cambio a 2D va 12 m antes del final; la vuelta a 3D, 8 m dentro de la carretera de
     salida (30 m), que esta función también crea. alturas: altura de cada plataforma respecto al suelo (subidas de
     1,5 m como máximo, o un resorte en 'resortes' = índices de plataforma). Devuelve el Tramo de salida.
-    enemigos: zona (o None): un enemigo en el centro de cada plataforma y dos en una de cada 3-5 (0.7.11; antes
-    había además un Spinner sobre cada hueco).
+    enemigos: zona (o None): un enemigo en el centro de cada plataforma y un Spinner volando sobre cada hueco, para
+    poder encadenar homing attacks (pedido en la prueba de la 0.7.1; en 2D están bien así, prueba de la 0.7.11).
+    cambio (0.7.12): posición del cambio a 2D respecto al cursor (por defecto 12 m antes del final de la carretera
+    anterior). cambio_ghz: trigger con los campos del que hay al pie del último loop de ghz200 (32012), que pasa del
+    modo dash a 2D a 2,8 m de la salida del dash.
     Margen (0.7.3): un homing que cruza el cambio de modo se cancela, así que la primera plataforma empieza con una
     pista de MARGEN_CAMBIO_2D - 12 m sin enemigos, la última mide MARGEN - 8 m y no lleva enemigo, y la carretera de
     salida mide 8 + MARGEN m (lo que pongan las secciones encima debe ir más allá; generar.py lo comprueba)."""
     margen = AJUSTES["MARGEN_CAMBIO_2D"]
     ritmo("2d")
-    a_2d(-12)
+    if cambio_ghz:
+        cambio_modo("ChangeMode_3Dto2D", cambio, ancho=10, alto=15,
+                    extra="<m_IsAutoChange2DPath>true</m_IsAutoChange2DPath><m_IsPadCorrect>true</m_IsPadCorrect>"
+                          "<m_PathEaseTime>1</m_PathEaseTime>", cambiar_camara=False)
+    else:
+        a_2d(cambio)
     n = len(alturas)
-    entrada = max(0.0, margen - 12.0)                       # pista de entrada (parte de la primera plataforma)
+    entrada = max(0.0, margen + cambio)                       # pista de entrada (parte de la primera plataforma)
     largo_final = max(largo_plat + 3.0, margen - 8.0)       # última plataforma (hasta el cambio de vuelta a 3D)
     huecos_salvavidas = {1, n - 3} if n >= 4 else set()      # el segundo y el penúltimo hueco
     largos = [largo_plat] * n
     largos[0] += entrada
     largos[-1] = largo_final + (entrada if n == 1 else 0.0)
     total = sum(largos) + (n - 1) * hueco
-    curva_recta(f"{nombre}@SV", -17, total + 20, rieles=(-1.0, 1.0))
-    camara_2d(-12, total + 8, min(alturas) - 25, max(alturas) + 30)
+    curva_recta(f"{nombre}@SV", cambio - 5, total + 20, rieles=(-1.0, 1.0))
+    camara_2d(cambio, total + 8, min(alturas) - 25, max(alturas) + 30)
     if n > 1:                                               # suelo de muerte solo entre el primer y el último hueco
         suelo_muerte(largos[0], total - largos[0] - largos[-1], profundidad=15 + max(alturas))
-    # enemigos (0.7.11): 1 por plataforma y 2 en una de cada MIN..MAX (ciclo medio, mínimo, máximo: 4, 3, 5), sin
-    # los Spinners sobre cada hueco de antes (eran demasiados)
-    d_min, d_max = int(AJUSTES["ENEMIGOS_2D_DOBLE_MIN"]), int(AJUSTES["ENEMIGOS_2D_DOBLE_MAX"])
-    ciclo_doble = [max(1, (d_min + d_max) // 2), max(1, d_min), max(1, d_max)]
-    siguiente_doble = ciclo_doble[0]                        # número de plataforma (desde 1) con 2 enemigos
     x = 0.0
     for i, h in enumerate(alturas):
         largo = largos[i]
@@ -877,15 +891,10 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
             resorte_vertical(x + largo - 1.5, 0, h, velocidad=26)
         if tubos:
             tubo((x + largo - largo_plat / 2, 0, h - 16), (x + largo - largo_plat / 2, 0, h - 3.1), 1.8, tubos)
-        if enemigos and i < n - 1:                          # en el centro de la parte normal de la plataforma
-            centro_p = x + largo - largo_plat / 2
-            if i + 1 == siguiente_doble:                    # 2 en una de cada MIN..MAX plataformas (0.7.11)
-                for d in (-2.5, 2.5):
-                    enemigo(enemigos, centro_p + d, 0, arriba=h + ENEMIGOS[enemigos][1])
-                ciclo_doble.append(ciclo_doble.pop(0))
-                siguiente_doble += ciclo_doble[0]
-            else:
-                enemigo(enemigos, centro_p, 0, arriba=h + ENEMIGOS[enemigos][1])
+        if enemigos:
+            if i < n - 1:                                   # en el centro de la parte normal de la plataforma
+                enemigo(enemigos, x + largo - largo_plat / 2, 0, arriba=h + ENEMIGOS[enemigos][1])
+                enemigo("sph", x + largo + hueco / 2, 0, arriba=max(h, alturas[i + 1]) + 4.0)
         if i in huecos_salvavidas and gimmicks_activos():
             # JumpPole de salvavidas (0.7.7): pegado a la cara de la plataforma siguiente, bajo su borde. Si Sonic cae
             # por el hueco lo coge, gira y sale hacia arriba. Un pilar prolonga la cara 3 m hacia abajo como pared.
@@ -905,7 +914,9 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
 def plataformas_3d(n, largo=18.0, hueco=7.0, ancho=10.0, mats=("gris",), dz=(0.0,), muerte=25.0, enemigos=None):
     """Serie de plataformas flotantes en 3D separadas por huecos que se saltan sin ayuda (7 m a velocidad normal).
     dz: cambio de altura al pasar a cada plataforma (cíclico; ±1,5 m como máximo).
-    enemigos: zona o None. Con zona: dos enemigos por plataforma y un Spinner volando sobre cada hueco."""
+    enemigos: zona o None. Con zona (0.7.12): solo voladores, un Spinner sobre cada hueco y otro sobre la mitad de la
+    última plataforma (1 por plataforma). Los de tierra salían despedidos con el homing y destruían al siguiente,
+    lo que cortaba la cadena de homing (prueba de la 0.7.11)."""
     ritmo("plataformas")
     total = n * largo + (n - 1) * hueco
     suelo_muerte(-2, total + 4, ancho=40, profundidad=muerte)
@@ -917,10 +928,9 @@ def plataformas_3d(n, largo=18.0, hueco=7.0, ancho=10.0, mats=("gris",), dz=(0.0
             sumar_tiempo(hueco / VEL["plataformas"], hueco)
         t = carretera(largo, ancho=ancho, mat=mats[i % len(mats)], muros=0)
         anillos(4, largo - 4, cada=3, tramo=t)
-        if enemigos:                         # dos enemigos por plataforma (antes uno en las impares)
-            for s, lado in ((largo / 3, 2.5), (2 * largo / 3, -2.5)):
-                with en(t, s):
-                    enemigo(enemigos, 0, lado)
+        if enemigos and i == n - 1:          # Spinner sobre la mitad de la última plataforma
+            with en(t, largo / 2):
+                enemigo("sph", 0, 0, arriba=5.0)
     ritmo("3d")
 
 
