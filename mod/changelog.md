@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.8
+Grieta del Tiempo:
+- **Loop de Green Hill:** al subir por el loop la cámara pasa a un plano fijo desde el costado que muestra el loop entero, y vuelve detrás de Sonic al salir.
+- **Cámara de los tramos 2D** más alejada y algo inclinada para que se vea el suelo. Se ajusta en `ajustes.conf` (`CAMARA_2D_*`).
+- **Espiral de light dash** más suave: una vuelta que empieza y termina hacia adelante, con un anillo cada metro.
+
 ## 0.7.7
 Grieta del Tiempo:
 - **Barra de giro centrada:** el juego la coloca desde un extremo. Su largo, altura y posición se ajustan en `ajustes.conf` (`BARRA_GIRO_*`).

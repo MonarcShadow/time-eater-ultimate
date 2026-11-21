@@ -49,17 +49,25 @@ def construir():
     # segunda tanda de tejados (nuevo en 0.7.0), con Egg Fighters y GunHunters, y otro riel más largo
     tejados(4, primero=5, enemigos=True)
     # espiral de anillos de light dash (0.7.7; antes una barra de acrobacia, difícil de usar suelta en el aire):
-    # hueco de 16 m y el tejado siguiente 10 m más alto. La hélice (radio 3 m, 2 vueltas alrededor del eje de avance)
-    # sube del borde de salida al de llegada; empieza y acaba a 1,2 m sobre cada tejado. Sin light dash no se llega.
+    # hueco de 16 m y el tejado siguiente 10 m más alto. La hélice da 1 vuelta alrededor del eje de avance con el radio
+    # modulado por sin(pi·f): empieza y acaba tangente hacia adelante (en la 0.7.7, 2 vueltas de radio fijo arrancaban
+    # de lado y Sonic salía recto). Anillos cada 1 m de recorrido real. Sin light dash no se llega.
     carretera(20, ancho=14, mat="euc", muros=0.5, mat_muro="cte")
-    HUECO, SUBIDA, RADIO, VUELTAS = 16.0, 10.0, 3.0, 2
-    largo_helice = math.hypot(2 * math.pi * RADIO * VUELTAS, math.hypot(HUECO + 4, SUBIDA))
-    n_anillos = int(largo_helice / 1.5)
-    anillos(-6, -3, cada=1.5, arriba=1.2, dash=True)                          # arranque sobre el tejado
-    for k in range(n_anillos + 1):
-        f = k / n_anillos
-        a = 2 * math.pi * VUELTAS * f
-        obj("Ring", CAMPOS_RING_DASH, -2 + (HUECO + 4) * f, RADIO * math.sin(a), 1.2 + RADIO * (1 - math.cos(a)) + SUBIDA * f)
+    HUECO, SUBIDA, RADIO, VUELTAS, PASO = 16.0, 10.0, 3.5, 1, 1.0
+
+    def helice(f):
+        a, r = 2 * math.pi * VUELTAS * f, RADIO * math.sin(math.pi * f)
+        return (-2 + (HUECO + 4) * f, r * math.sin(a), 1.2 + SUBIDA * f + r * (1 - math.cos(a)))
+    muestras = [helice(i / 2000) for i in range(2001)]
+    arco = [0.0]
+    for p, q in zip(muestras, muestras[1:]):
+        arco.append(arco[-1] + math.dist(p, q))
+    anillos(-8, -3, cada=PASO, arriba=1.2, dash=True)                         # arranque sobre el tejado
+    siguiente = 0.0
+    for p, s in zip(muestras, arco):
+        if s >= siguiente - 1e-6:
+            obj("Ring", CAMPOS_RING_DASH, *p)
+            siguiente += PASO
     suelo_muerte(0, HUECO, ancho=40, profundidad=18)
     K.avanzar(HUECO, SUBIDA)
     sumar_tiempo(HUECO / VEL["3d"] + 2.0, HUECO)

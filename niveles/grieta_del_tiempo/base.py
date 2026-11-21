@@ -32,6 +32,10 @@ AJUSTES_POR_DEFECTO = {
     "BARRA_GIRO_LARGO": 6.0,       # m; PoleLen de la IronPole3D de la sección 3
     "BARRA_GIRO_ALTO": 3.0,        # m sobre la pista
     "BARRA_GIRO_LADO": 3.0,        # m a la izquierda del eje donde va su extremo (la barra crece hacia la derecha)
+    "CAMARA_2D_DISTANCIA": 17.0,   # m; cámara de los tramos 2D (los originales usan 15-20)
+    "CAMARA_2D_PITCH": 10.0,       # grados mirando hacia abajo
+    "CAMARA_2D_ALTURA": 1.5,       # m por encima de Sonic (TargetOffset_Up)
+    "CAMARA_2D_GIRO": 0.0,         # grados de corrección del Yaw si la cámara no queda de lado
 }
 
 
@@ -786,6 +790,7 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
     largos[-1] = largo_final + (entrada if n == 1 else 0.0)
     total = sum(largos) + (n - 1) * hueco
     curva_recta(f"{nombre}@SV", -17, total + 20, rieles=(-1.0, 1.0))
+    camara_2d(-12, total + 8, min(alturas) - 25, max(alturas) + 30)
     if n > 1:                                               # suelo de muerte solo entre el primer y el último hueco
         suelo_muerte(largos[0], total - largos[0] - largos[-1], profundidad=15 + max(alturas))
     x = 0.0
@@ -870,6 +875,20 @@ def loop(nombre, radio=10.0, ancho=10.0, desplazamiento=14.0, mat="gris"):
         pts = [K.frame(-8, v, 0)] + [p(2 * math.pi * k / n, v) for k in range(n + 1)] + [K.frame(8, desplazamiento + v, 0)]
         rieles.append(pts)
     CURVAS.append((f"{nombre}@DP", rieles))
+    # plano fijo del loop (0.7.8): ObjCameraPan (campos de ghz200) al costado contrario al desplazamiento, a la altura
+    # del centro, mirando a Sonic. Su volumen empieza a 1,5 m del suelo: al entrar y al salir del loop Sonic va por
+    # debajo y la cámara es la normal; en cuanto sube (~30°) pasa al plano fijo y vuelve detrás al bajar al final.
+    id_pan = obj("ObjCameraPan", "<CameraPositionMode>1</CameraPositionMode><Distance>10</Distance><Ease_Time_Enter>0</Ease_Time_Enter>"
+                 "<Ease_Time_Leave>0</Ease_Time_Leave><FaceType>0</FaceType><Fovy>60</Fovy><GroundOffset>0</GroundOffset>"
+                 "<IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow><IsCollision>false</IsCollision>"
+                 "<IsControllable>false</IsControllable><OffsetPitch>0</OffsetPitch><OffsetYaw>0</OffsetYaw><Radius>1</Radius>"
+                 "<Range>100000</Range><Target><SetObjectID>0</SetObjectID></Target><TargetOffset_Front>0</TargetOffset_Front>"
+                 "<TargetOffset_Right>0</TargetOffset_Right><TargetOffset_Up>0</TargetOffset_Up><TargetOffset_Vel>0</TargetOffset_Vel>"
+                 "<TargetPositionFix><x>0</x><y>0</y><z>0</z></TargetPositionFix><Target_Type>0</Target_Type>"
+                 "<VelOffsetXYZ>0</VelOffsetXYZ><ZRot>0</ZRot>", 0.0, -25.0, radio, q=(1.0, 0.0, 0.0, 0.0))
+    alto_vol = 2 * radio + 2 - 1.5
+    volumen_camara(id_pan, 0.0, desplazamiento / 2, 1.5 + alto_vol / 2, 2 * radio + 4, desplazamiento + ancho + 4, alto_vol,
+                   entrar=0.3, salir=0.5)
     cambio_modo("ChangeMode_3DtoDash", -6, ancho=ancho + 6, alto=25, extra=EXTRA_DASH)
     K.x -= desplazamiento * math.sin(K.th)
     K.y += desplazamiento * math.cos(K.th)
@@ -963,6 +982,7 @@ def barra_2d(nombre, hueco=16.0, subida=3.0, ancho=8.0, mat="gris", mat_llegada=
     llegada = max(12.0, margen - 8.0)
     total = entrada + hueco + llegada
     curva_recta(f"{nombre}@SV", -17, total + 20, rieles=(-1.0, 1.0))
+    camara_2d(-12, total + 8, -25, subida + 30)
     plataforma(0, 0, 0, entrada, ancho, alto=2, mat=mat)
     plataforma(entrada + hueco, 0, subida, llegada, ancho, alto=2 + subida, mat=mat_llegada or mat)
     anillos(2, entrada - 2, cada=2.0)
@@ -1022,6 +1042,7 @@ def pozo_pared_2d(nombre, alto=14.0, ancho=8.0, mat="gris", mat_panel="cpz"):
     arriba_largo = max(12.0, margen - 8.0) + 2.0           # plataforma de arriba (incluye los 2 m de la pared)
     total = x_pared + arriba_largo
     curva_recta(f"{nombre}@SV", -17, total + 20, rieles=(-1.0, 1.0))
+    camara_2d(-12, total + 8, -25, alto + 30)
     plataforma(0, 0, 0, x_pared, ancho, alto=2, mat=mat)                             # suelo de entrada y del pozo
     plataforma(x_pozo - 4, 0, alto + 3, 4, ancho, alto=alto - 0.5, mat=mat)          # bloque trasero (3,5 .. alto+3)
     plataforma(x_pared, 0, alto, arriba_largo, ancho, alto=alto + 2, mat=mat)       # pared delantera + plataforma de arriba
@@ -1080,6 +1101,35 @@ def camara_aterrizaje(centro, fondo_z, dist_salida=30.0, alto=10.0, lado=28.0):
         "<IsEnableCollision>false</IsEnableCollision><LineType>0</LineType><PositionList /><Priority>0</Priority><Range>300</Range>"
         f"<Shape_Type>0</Shape_Type><Target><SetObjectID>{id_cam}</SetObjectID></Target>",
         pos=(centro[0], centro[1], fondo_z + alto / 2), q=(1.0, 0.0, 0.0, 0.0))
+
+
+def volumen_camara(id_cam, adelante, lado, arriba, largo, ancho, alto, entrar=1.0, salir=1.0):
+    """ChangeVolumeCamera orientado con el rumbo (q_yaw): Length a lo largo del recorrido, Width lateral, Height
+    vertical (misma convención que los triggers de cambio de modo); (adelante, lado, arriba) = centro de la caja."""
+    return obj("ChangeVolumeCamera", f"<Collision_Height>{alto:g}</Collision_Height><Collision_Length>{largo:g}</Collision_Length>"
+               f"<Collision_Width>{ancho:g}</Collision_Width><DefaultStatus>0</DefaultStatus><Ease_Time_Enter>{entrar:g}</Ease_Time_Enter>"
+               f"<Ease_Time_Leave>{salir:g}</Ease_Time_Leave><GroundOffset>0</GroundOffset><IsCameraView>false</IsCameraView>"
+               "<IsCastShadow>false</IsCastShadow><IsEnableCollision>false</IsEnableCollision><LineType>0</LineType><PositionList />"
+               f"<Priority>0</Priority><Range>300</Range><Shape_Type>0</Shape_Type><Target><SetObjectID>{id_cam}</SetObjectID></Target>",
+               adelante, lado, arriba, q=q_yaw())
+
+
+def camara_2d(desde, hasta, z_min=-25.0, z_max=35.0):
+    """Cámara de los tramos 2D (0.7.8): la 2D por defecto quedaba muy cerca y no se veía el suelo. ObjCameraParallel que
+    sigue a Sonic de lado (como los 2D de ghz200/ssh200: Distance 15-20, Pitch 0-15) con un volumen que cubre el tramo
+    entre 'desde' y 'hasta' (metros desde el cursor). Yaw = rumbo + CAMARA_2D_GIRO: deducido de los planeos (la cámara
+    mira hacia Yaw + 90°), así mira hacia la izquierda del recorrido y el avance queda a la derecha de la pantalla."""
+    yaw = (math.degrees(K.th) + AJUSTES["CAMARA_2D_GIRO"] + 180) % 360 - 180
+    id_cam = obj("ObjCameraParallel", f"<Distance>{AJUSTES['CAMARA_2D_DISTANCIA']:g}</Distance><Ease_Time_Enter>0</Ease_Time_Enter>"
+                 "<Ease_Time_Leave>0</Ease_Time_Leave><Fovy>45</Fovy><GroundOffset>0</GroundOffset><IsCameraView>false</IsCameraView>"
+                 "<IsCastShadow>false</IsCastShadow><IsCollision>false</IsCollision><IsControllable>false</IsControllable>"
+                 f"<OffsetPitch>0</OffsetPitch><OffsetYaw>0</OffsetYaw><Pitch>{AJUSTES['CAMARA_2D_PITCH']:g}</Pitch><Range>100000</Range>"
+                 "<Target><SetObjectID>0</SetObjectID></Target><TargetOffset_Front>0</TargetOffset_Front><TargetOffset_Right>0</TargetOffset_Right>"
+                 f"<TargetOffset_Up>{AJUSTES['CAMARA_2D_ALTURA']:g}</TargetOffset_Up><TargetOffset_Vel>0</TargetOffset_Vel>"
+                 "<TargetPositionFix><x>0</x><y>0</y><z>0</z></TargetPositionFix><Target_Type>0</Target_Type>"
+                 f"<VelOffsetXYZ>0</VelOffsetXYZ><Yaw>{yaw:.1f}</Yaw><ZRot>0</ZRot>",
+                 (desde + hasta) / 2, 0.0, 3.0)
+    volumen_camara(id_cam, (desde + hasta) / 2, 0.0, (z_min + z_max) / 2, hasta - desde, 30.0, z_max - z_min)
 
 
 def flecha_salida(centro, fondo_z, largo=16.0):
