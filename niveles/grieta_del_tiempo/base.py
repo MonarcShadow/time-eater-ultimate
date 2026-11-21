@@ -26,7 +26,8 @@ AJUSTES_POR_DEFECTO = {
     "GIRO_CAMARA_PLANEO": 135.0,   # grados; planeo final (sección 12)
     "MARGEN_CAMBIO_2D": 40.0,      # m libres de huecos y enemigos a cada lado de un cambio 3D<->2D (~2 s corriendo)
     "INICIO_SECCION": 0.0,         # 0 = salida original; N = checkpoint de la sección N (solo para pruebas)
-    "RAMPA_TEJADO_ALTO": 1.2,      # m; cuña a 45° en el borde de los tejados de la sección 9
+    "RAMPA_TEJADO_ALTO": 1.2,      # m; cuña en el borde de los tejados de la sección 9
+    "RAMPA_TEJADO_ANGULO": 25.0,   # grados de esa cuña (a 45° se salía demasiado alto, 0.7.4)
     "GIMMICKS_NUEVOS": 1.0,        # 1 = JumpPole, Pulley y WallJumpBlock (0.7.4, sin probar); 0 = sin ellos
 }
 
@@ -197,10 +198,12 @@ SOLIDO = Malla()      # recorrido + decoración sólida (visual y colisión)
 SOLO_VISUAL = Malla()  # rieles de grind, costuras, ventanas, agua (sin colisión)
 MUERTE = Malla()       # suelos de muerte bajo los huecos (solo colisión, tag DEAD)
 DANO = Malla()         # zonas que hacen daño, p. ej. lava (solo colisión, tag DAMAGE)
-# Agua para correr encima con el boost (solo colisión). Copian los dos mares de ssh200.phy.hkx; los tags AGUAMUERTE y
-# AGUAHONDA los añade construir_nivel.ps1 a los del HavokConverter.ini. Variante A = sea01 (material 12 muerte,
-# swa_col_player 5); B = sea02 (material 2 agua profunda, swa_col_player 10). La prueba de la 0.7.4 dirá cuál sirve.
-AGUA = {"A": Malla(), "B": Malla()}
+# Agua para correr encima con el boost (solo colisión). Copian cuerpos de agua de ssh200.phy.hkx; los tags los añade
+# construir_nivel.ps1 a los del HavokConverter.ini. A = sea01 (material 12 muerte, swa_col_player 5): descartada en la
+# 0.7.4, Sonic moría aunque fuera con boost. B = sea02 (material 2 agua profunda, 10); C = inside02 (material 14 agua
+# sin muerte, 23). La prueba de la 0.7.5 dirá cuál sirve.
+AGUA = {"B": Malla(), "C": Malla()}
+TAGS_AGUA = {"B": "AGUAHONDA", "C": "AGUASINMUERTE"}
 GUIAS = []             # (nombre, ID) de las splines guía (tirolinas): se declaran en Stage.stg.xml como <Guide>
 OBJETOS = []           # (xml) set data
 CURVAS = []            # (nombre, [[puntos riel 1], [puntos riel 2]?])
@@ -476,7 +479,7 @@ def cuna(adelante, lado, largo, ancho, alto, mat):
         SOLIDO.cara(cara, mat, hacia=fuera)
 
 
-def agua(adelante, largo, ancho=20.0, variante="A", profundidad=12.0):
+def agua(adelante, largo, ancho=20.0, variante="B", profundidad=12.0):
     """Tramo de agua para cruzar corriendo con el boost: colisión de agua 0,2 m bajo la pista, placa azul visual y suelo
     de muerte debajo (sin boost, Sonic se hunde). Ver AGUA."""
     x, y, z = K.frame(adelante + largo / 2, 0, -0.2)
@@ -863,9 +866,35 @@ def gimmicks_activos():
 
 
 def barra_acrobacia(adelante, lado=0.0, arriba=2.0):
-    """JumpPole (barra de acrobacia, campos de ghz200): Sonic gira en ella y sale alto si salta en el momento justo."""
+    """JumpPole (barra de acrobacia, campos de ghz200): Sonic gira en ella y sale alto si salta en el momento justo.
+    Solo funciona en 2D: los originales están en planos 2D (ssh200 x ≈ -641, ghz200 x = 2047,5) y en 3D no se cogía
+    (prueba de la 0.7.4). Usar dentro de barra_2d()."""
     return obj("JumpPole", "<AddMaxVelocity>0</AddMaxVelocity><AddMinVelocity>0</AddMinVelocity><GroundOffset>0</GroundOffset>"
                "<IsCastShadow>true</IsCastShadow><Range>30</Range>", adelante, lado, arriba, q=q_yaw())
+
+
+def barra_2d(nombre, hueco=16.0, subida=3.0, ancho=8.0, mat="gris", mat_llegada=None):
+    """Tramo 2D con una barra de acrobacia sobre un hueco. Se llama al final de una carretera recta de al menos 20 m.
+    Respeta MARGEN_CAMBIO_2D: entrada plana, hueco con el JumpPole a 3 m del borde y 2 m por encima, plataforma de
+    llegada 'subida' m más alta y vuelta a 3D. Devuelve el Tramo de salida."""
+    margen = AJUSTES["MARGEN_CAMBIO_2D"]
+    ritmo("2d")
+    a_2d(-12)
+    entrada = max(10.0, margen - 12.0)
+    llegada = max(12.0, margen - 8.0)
+    total = entrada + hueco + llegada
+    curva_recta(f"{nombre}@SV", -17, total + 20, rieles=(-1.0, 1.0))
+    plataforma(0, 0, 0, entrada, ancho, alto=2, mat=mat)
+    plataforma(entrada + hueco, 0, subida, llegada, ancho, alto=2 + subida, mat=mat_llegada or mat)
+    anillos(2, entrada - 2, cada=2.0)
+    anillos(entrada + hueco + 2, total - 2, cada=2.0, arriba=subida + 0.8)
+    barra_acrobacia(entrada + 3.0, 0, 2.0)
+    suelo_muerte(entrada, hueco, ancho=40, profundidad=18)
+    K.avanzar(total, subida)
+    sumar_tiempo(total / VEL["2d"] + 1.0, total)
+    ritmo("3d")
+    a_2d(8, salida=True)
+    return carretera(8 + margen, ancho=14, mat=mat_llegada or mat)
 
 
 def panel_pared(adelante, arriba, alto, ancho, mira_atras):
@@ -917,11 +946,20 @@ def pozo_pared_2d(nombre, alto=14.0, ancho=8.0, mat="gris", mat_panel="cpz"):
     plataforma(x_pared, 0, alto, arriba_largo, ancho, alto=alto + 2, mat=mat)       # pared delantera + plataforma de arriba
     anillos(2, x_pozo - 6, cada=2.0)
     anillos(x_pared + 3, total - 3, cada=2.0, arriba=alto + 0.8)
-    for x, z0, z1 in ((x_pared - 0.06, 0.5, alto - 0.3), (x_pozo + 0.06, 3.8, alto + 2.7)):
-        visual(x, 0, z0, (0.1, 3.0, z1 - z0), mat_panel)                             # placas de color en las caras
     if gimmicks_activos():
-        panel_pared(x_pared - 0.05, (0.5 + alto - 0.3) / 2, alto - 0.8, 3.0, mira_atras=True)
-        panel_pared(x_pozo + 0.05, (3.8 + alto + 2.7) / 2, alto - 1.1, 3.0, mira_atras=False)
+        # El WallJumpBlock es un panel visible y SÓLIDO (prueba de la 0.7.4: uno de SizeY ~13 tapaba el paso bajo el
+        # bloque trasero). No se sabe si su Position es el centro, la base o la parte de arriba, ni si SizeY está en
+        # metros: por eso columnas de paneles pequeños (SizeY 1,5, como los de ssh200). El trasero más bajo empieza
+        # por encima de 5,5 m con cualquier convención, y el paso bajo el bloque (0..3,5 m) queda libre.
+        for z in (2.5, 5.5, 8.5, 11.5):
+            if z < alto - 1.0:
+                panel_pared(x_pared - 0.05, z, 1.5, 2.0, mira_atras=True)
+        for z in (7.0, 10.0, 13.0, 16.0):
+            if z < alto + 2.5:
+                panel_pared(x_pozo + 0.05, z, 1.5, 2.0, mira_atras=False)
+    else:
+        for x, z0, z1 in ((x_pared - 0.06, 0.5, alto - 0.3), (x_pozo + 0.06, 3.8, alto + 2.7)):
+            visual(x, 0, z0, (0.1, 3.0, z1 - z0), mat_panel)                         # placas de color en las caras
     K.avanzar(total, alto)
     sumar_tiempo(total / VEL["2d"] + 4.0, total)          # ~4 s de saltos en el pozo
     ritmo("3d")

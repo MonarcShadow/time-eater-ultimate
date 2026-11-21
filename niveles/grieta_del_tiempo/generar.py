@@ -86,7 +86,7 @@ ob_muerte = MUERTE.objeto("teu_muerte_col@DEAD", col_col)
 ob_dano = DANO.objeto("teu_lava_col@DAMAGE", col_col)
 # agua para correr encima (tags propios que añade construir_nivel.ps1; ver base.AGUA)
 obs_agua = [base.AGUA[v].objeto(f"teu_agua_{v.lower()}_col@{tag}", col_col)
-            for v, tag in (("A", "AGUAMUERTE"), ("B", "AGUAHONDA")) if base.AGUA[v].f]
+            for v, tag in base.TAGS_AGUA.items() if base.AGUA[v].f]
 ref = Malla()
 ref.caja(INICIO, (0.5, 0.5, 1.0), 0, "gris")
 r = ref.objeto("REF_Sonic", col_ref)

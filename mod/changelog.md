@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.5
+Grieta del Tiempo:
+- **Agua (sección 3):** el primer tipo de agua mataba aunque se fuera con boost; ahora los dos tramos prueban los otros dos tipos del mar de Seaside Hill. Un poste morado marca el primer tramo y dos postes el segundo.
+- **Rampas de los tejados:** el ángulo se cambia en `ajustes.conf` (`RAMPA_TEJADO_ANGULO`, ahora 25°; a 45° se salía demasiado alto).
+- **Pozo de salto en pared:** los paneles son más pequeños y van más altos; ya no tapan el paso por debajo del bloque.
+- **Barra de acrobacia:** ahora está en un tramo 2D (en los niveles originales solo se usan en 2D; en 3D no se cogía).
+
 ## 0.7.4
 Grieta del Tiempo:
 - **Cámaras de los planeos** ajustadas (giro 180 en los dos pozos). El pozo del reloj ahora mide 195 m (~10 s de planeo) y tiene una flecha morada en el fondo que apunta a la salida.

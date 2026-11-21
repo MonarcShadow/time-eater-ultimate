@@ -13,7 +13,9 @@ def construir():
     seccion("3 Mar en llamas")
     costura(14)
     # pasarela recta sobre el mar con dos tramos de agua de 30 m que se cruzan corriendo con el boost (0.7.4).
-    # Cada tramo usa una variante de colisión de agua de Seaside Hill (base.AGUA): A = sea01, B = sea02.
+    # Cada tramo usa una variante de colisión de agua de Seaside Hill (base.AGUA): primero B = sea02, después
+    # C = inside02 (0.7.5; la A = sea01 mataba aunque se fuera con boost). Postes morados al inicio de cada tramo:
+    # uno en el primero, dos en el segundo, para que se sepa cuál funciona.
     # Pawns con lanza de Seaside Hill y dos manchas de lava.
     def postes(t, *ss):
         for s in ss:
@@ -21,12 +23,15 @@ def construir():
                 tubo((0, 14, -3), (0, 14, 8), 1.4, "ssh", n=8)
                 tubo((0, -14, -3), (0, -14, 8), 1.4, "ssh", n=8)
 
-    for variante, (largo, enemigos_s) in zip("AB", ((40, (12,)), (40, (10,)))):
+    for n, (variante, largo, enemigos_s) in enumerate((("B", 40, (12,)), ("C", 40, (10,)))):
         t = carretera(largo, ancho=20, mat="ssh", muros=0.6)
         mar(t)
         for s in enemigos_s:
             with en(t, s):
-                enemigo("ssh", 0, -4 if variante == "A" else 4)
+                enemigo("ssh", 0, -4 if n == 0 else 4)
+        with en(t, largo):
+            for k in range(n + 1):                          # 1 o 2 postes morados a la izquierda: número del tramo
+                tubo((0, 8 + 1.5 * k, 0), (0, 8 + 1.5 * k, 4), 0.3, "costura", solido=False, n=6)
         anillos(6, largo - 2, cada=6, tramo=t)
         postes(t, largo - 10)
         with en(t, largo - 8):
