@@ -65,7 +65,9 @@ def construir():
     x2, x3 = x1 + 25.0, x1 + 45.0
     enemigo("sph", x1, 0, arriba=11.0)
     enemigo("sph", x2, 0, arriba=13.0)
-    enemigo("sph", x3, 0, arriba=13.0)
+    # 0.7.15: el tercero, LIGHT_DASH_REBOTE m (4) bajo el primer anillo (+14): con el rebote del homing Sonic sube
+    # unos 3 m y queda a la altura de la fila (a 1 m pasaba por encima)
+    enemigo("sph", x3, 0, arriba=14.0 - AJUSTES["LIGHT_DASH_REBOTE"])
     largo_fila = HUECO - 2.0 - x3
     fila_light_dash([(x3 + largo_fila * k / 8, 2.0 * math.sin(2 * math.pi * k / 8), 14.0 - k / 8) for k in range(9)])
     aro_impulso_inclinado(HUECO - 0.5, 0, 12.0, velocidad=30, bajada_grados=40)

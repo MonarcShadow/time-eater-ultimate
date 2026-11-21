@@ -53,7 +53,8 @@ AJUSTES_POR_DEFECTO = {
     "RIEL_CAMARA_DISTANCIA": 6.0,  # m (euc200: 4-5)
     "LIGHT_DASH_SEPARACION": 1.1,  # m entre anillos de light dash (pla204: 1,13; con 1,5-2 m Sonic no seguía las curvas)
     "LIGHT_DASH_GIRO_MAX": 6.0,    # grados máximos de giro entre dos anillos seguidos (pla204: 5,9)
-    "LIGHT_DASH_HUECO": 50.0,      # m del hueco del desafío aéreo de la sección 9 (con 24 se cruzaba con air boost)
+    "LIGHT_DASH_HUECO": 50.0,
+    "LIGHT_DASH_REBOTE": 4.0,      # m del primer anillo de la sección 9 sobre el tercer Spinner (rebote del homing)      # m del hueco del desafío aéreo de la sección 9 (con 24 se cruzaba con air boost)
 }
 
 

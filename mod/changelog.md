@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.15
+Grieta del Tiempo:
+- **Desafío aéreo (sección 9):** el tercer Spinner está 3 m más bajo, así que el rebote del homing deja a Sonic a la altura de la fila de light dash. La distancia se ajusta con `LIGHT_DASH_REBOTE`.
+
 ## 0.7.14
 Grieta del Tiempo:
 - **Inicio del nivel:** el terreno de detrás de la salida es rectangular (el semicírculo podía dar problemas de textura). Las paredes laterales se prolongan hasta una pared al fondo, para no caer por detrás.
