@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.14
+Grieta del Tiempo:
+- **Inicio del nivel:** el terreno de detrás de la salida es rectangular (el semicírculo podía dar problemas de textura). Las paredes laterales se prolongan hasta una pared al fondo, para no caer por detrás.
+- **Desafío aéreo (sección 9):**
+  - todo el borde del tejado tiene resortes iguales, así que se rebota directamente al llegar;
+  - ahora hay 3 Spinners, más separados (a 20, 25 y 20 m);
+  - la fila de light dash empieza justo encima del tercero.
+
 ## 0.7.13
 Grieta del Tiempo:
 - **Salida del loop:** el terreno después del loop es más largo, con una recta y un embudo de 30 m con paredes sólidas. El paso a 2D ocurre donde termina el embudo, con Sonic ya centrado.

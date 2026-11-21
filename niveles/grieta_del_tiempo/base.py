@@ -462,24 +462,19 @@ def carretera(largo, ancho=12.0, dz=0.0, giro_grados=0.0, muros=1.2, mat="gris",
     return Tramo(secciones)
 
 
-def fondo_semicirculo(largo, radio, mat, alto_pretil=2.5, mat_pretil=None, n=12):
-    """Terreno DETRÁS del cursor (0.7.13, inicio del nivel): losa recta de 'largo' m y 2 m de grosor (ancho 2·radio)
-    que termina en un semicírculo de 'radio' m con un pretil curvo sólido (cajas de 1 m de grosor) para no caer al
-    vacío. No mueve el cursor."""
-    plataforma(-largo, 0, 0, largo, 2 * radio, alto=2.0, mat=mat)
-    centro = K.frame(-largo, 0, 0)
-    SOLIDO.disco((centro[0], centro[1], centro[2] - 1.0), radio, (0.0, 0.0, 1.0), mat, n=2 * n, grosor=2.0)
-    mp = mat_pretil or mat
-    r = radio - 0.5
-    for k in range(n):                                   # de la izquierda (+90°) a la derecha (+270°) por detrás
-        a0 = K.th + math.pi / 2 + math.pi * k / n
-        a1 = K.th + math.pi / 2 + math.pi * (k + 1) / n
-        p0 = (centro[0] + r * math.cos(a0), centro[1] + r * math.sin(a0))
-        p1 = (centro[0] + r * math.cos(a1), centro[1] + r * math.sin(a1))
-        SOLIDO.caja(((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, centro[2] - 2.0),
-                    (math.hypot(p1[0] - p0[0], p1[1] - p0[1]) + 0.4, 1.0, alto_pretil + 2.0),
-                    math.atan2(p1[1] - p0[1], p1[0] - p0[0]), mp)
-    MIN_Z[0] = min(MIN_Z[0], centro[2] - 2.0)
+def fondo_rectangular(largo, ancho, mat, alto_fondo=2.5, alto_lados=1.2, mat_muro=None):
+    """Terreno DETRÁS del cursor (inicio del nivel): losa de largo × ancho m y 2 m de grosor, con paredes laterales
+    que prolongan las de la carretera (alto_lados) y una pared al fondo (alto_fondo), todas cajas de 1 m de grosor
+    por fuera del borde. 0.7.14: rectangular (el semicírculo de la 0.7.13 podía dar problemas de textura). No mueve
+    el cursor."""
+    mm = mat_muro or mat
+    plataforma(-largo, 0, 0, largo, ancho, alto=2.0, mat=mat)
+    for signo in (1, -1):                                 # laterales (1 m más largas para cerrar las esquinas)
+        x, y, z = K.frame(-largo / 2 - 0.5, signo * (ancho / 2 + 0.5), -2.0)
+        SOLIDO.caja((x, y, z), (largo + 1.0, 1.0, alto_lados + 2.0), K.th, mm)
+    x, y, z = K.frame(-largo - 0.5, 0, -2.0)              # fondo
+    SOLIDO.caja((x, y, z), (1.0, ancho + 2.0, alto_fondo + 2.0), K.th, mm)
+    MIN_Z[0] = min(MIN_Z[0], z)
 
 
 def plataforma(adelante, lado, arriba, largo, ancho, alto=2.0, mat="gris", rumbo=None):

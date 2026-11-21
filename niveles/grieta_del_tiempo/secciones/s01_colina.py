@@ -4,9 +4,10 @@ from base import *  # noqa: F401,F403
 
 def construir():
     seccion("1 Colina contaminada", checkpoint=False)
-    # detrás de la salida (0.7.13): 12 m más de terreno acabado en semicírculo con pretil, para no caer al vacío
-    # corriendo hacia atrás (la pared de la 0.7.11, pegada a Sonic, hacía que la cámara empezara mirando desde arriba)
-    fondo_semicirculo(12, 7, "ghz", alto_pretil=2.5, mat_pretil="cpz")
+    # detrás de la salida: 12 m más de terreno cerrado por paredes, para no caer al vacío corriendo hacia atrás (la pared
+    # de la 0.7.11, pegada a Sonic, hacía que la cámara empezara mirando desde arriba; 0.7.14: rectangular en lugar
+    # del semicírculo de la 0.7.13)
+    fondo_rectangular(12, 14, "ghz", alto_fondo=2.5, alto_lados=1.2, mat_muro="cpz")
     t = carretera(40, ancho=14, mat="ghz")
     anillos(10, 30, tramo=t)
     for i, s in enumerate((10, 22, 34)):                         # tuberías de Chemical Plant reventando la colina:

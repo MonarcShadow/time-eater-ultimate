@@ -48,19 +48,26 @@ def construir():
     sumar_tiempo(24 / VEL["rapido"], 24)
     # segunda tanda de tejados (nuevo en 0.7.0), con Egg Fighters y GunHunters, y otro riel más largo
     tejados(4, primero=5, enemigos=True)
-    # desafío aéreo (0.7.9; antes una espiral de light dash, en la que Sonic salía recto sin girar): resorte al final
-    # del tejado, 2 Spinners para encadenar homing, fila recta de anillos de light dash y un aro de impulso que apunta
-    # hacia abajo, al tejado de llegada (4 m más alto), donde un panel de dash lleva al otro lado.
-    # 0.7.10: la fila de 10 m se cruzaba con un air boost. Hueco de LIGHT_DASH_HUECO (50 m) y fila en S suave como la
-    # del inicio del desafío 4 de Planet Wisp (pla204: anillos a 1,13 m, ≤ 6° por anillo): ±2 m de lado, radio ~16 m.
+    # desafío aéreo (0.7.9; antes una espiral de light dash, en la que Sonic salía recto sin girar): resortes en el borde
+    # del tejado, Spinners para encadenar homing, fila de anillos de light dash y un aro de impulso que apunta hacia
+    # abajo, al tejado de llegada (4 m más alto), donde un panel de dash lleva al otro lado.
+    # 0.7.10: la fila de 10 m se cruzaba con un air boost. Hueco de LIGHT_DASH_HUECO y fila en S suave como la del
+    # inicio del desafío 4 de Planet Wisp (pla204: anillos a 1,13 m, ≤ 6° por anillo): ±2 m de lado.
+    # 0.7.14: los 2 Spinners (a 7 y 13 m) estaban muy juntos. Ahora 3, a 20 m de los resortes, 25 m del primero y
+    # 20 m del segundo; la fila empieza 1 m sobre el tercero. Todo el borde lleva resortes iguales (rebota al llegar).
     t = carretera(20, ancho=14, mat="euc", muros=0.5, mat_muro="cte")
-    HUECO, SUBIDA = max(24.0, AJUSTES["LIGHT_DASH_HUECO"]), 4.0
-    with en(t, 17):
-        resorte_vertical(0, 0, 0, velocidad=30, mantener=6)
-    enemigo("sph", 4, 0, arriba=11.0)
-    enemigo("sph", 10, 0, arriba=13.0)
-    largo_fila = HUECO - 2.0 - 12.0
-    fila_light_dash([(12.0 + largo_fila * k / 8, 2.0 * math.sin(2 * math.pi * k / 8), 13.0 - k / 8) for k in range(9)])
+    HUECO, SUBIDA = max(90.0, AJUSTES["LIGHT_DASH_HUECO"]), 4.0
+    X_RESORTES = -1.5                                       # respecto al final del tejado
+    with en(t, 20 + X_RESORTES):
+        for lado in (-6, -4, -2, 0, 2, 4, 6):
+            resorte_vertical(0, lado, 0, velocidad=30, mantener=6)
+    x1 = X_RESORTES + 20.0
+    x2, x3 = x1 + 25.0, x1 + 45.0
+    enemigo("sph", x1, 0, arriba=11.0)
+    enemigo("sph", x2, 0, arriba=13.0)
+    enemigo("sph", x3, 0, arriba=13.0)
+    largo_fila = HUECO - 2.0 - x3
+    fila_light_dash([(x3 + largo_fila * k / 8, 2.0 * math.sin(2 * math.pi * k / 8), 14.0 - k / 8) for k in range(9)])
     aro_impulso_inclinado(HUECO - 0.5, 0, 12.0, velocidad=30, bajada_grados=40)
     suelo_muerte(0, HUECO, ancho=40, profundidad=18)
     K.avanzar(HUECO, SUBIDA)
