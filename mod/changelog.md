@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.10
+Grieta del Tiempo:
+- **Cámara de los loops:** como en el último loop grande de Green Hill. Cámaras fijas a los lados del loop, altas y fuera de la pista, que siguen a Sonic durante la vuelta; al salir vuelve la cámara normal. Se ajusta en `ajustes.conf` (`LOOP_CAMARA_*`).
+- **Riel secreto de la torre:** empieza más hacia el frente (en diagonal), con una cámara fija desde arriba como la del riel de la torre de Rooftop Run, para que no tiemble en la espiral (`RIEL_CAMARA_*`).
+- **Desafío aéreo (sección 9):** el hueco mide 50 m (antes se cruzaba con un air boost) y la fila de light dash es larga y en S suave, con las medidas de Planet Wisp: un anillo cada 1,1 m y giros suaves (`LIGHT_DASH_*`).
+
 ## 0.7.9
 Grieta del Tiempo:
 - **Loop de Green Hill:** la cámara ahora está como en el primer loop del Green Hill original: fija delante del loop, a media altura, lo muestra de frente. El loop es un sólido con grosor (antes con boost parecía que se atravesaba).

@@ -36,6 +36,14 @@ AJUSTES_POR_DEFECTO = {
     "CAMARA_2D_PITCH": 10.0,       # grados mirando hacia abajo
     "CAMARA_2D_ALTURA": 1.5,       # m por encima de Sonic (TargetOffset_Up)
     "CAMARA_2D_GIRO": 0.0,         # grados de corrección del Yaw si la cámara no queda de lado
+    "LOOP_CAMARA_ALTO": 1.6,       # × radio: altura de las cámaras de los loops (último loop de ghz200)
+    "LOOP_CAMARA_LADO": 0.5,       # × radio: separación de esas cámaras desde el borde de la pista
+    "LOOP_CAMARA_PRIORIDAD": 3.0,  # Priority de sus volúmenes (ghz200 usa 3 y 5; con 1 no se imponía, 0.7.9)
+    "RIEL_CAMARA_PITCH": 85.0,     # grados: cámara cenital del riel secreto (euc200 usa 85-89 en el riel de la torre)
+    "RIEL_CAMARA_DISTANCIA": 6.0,  # m (euc200: 4-5)
+    "LIGHT_DASH_SEPARACION": 1.1,  # m entre anillos de light dash (pla204: 1,13; con 1,5-2 m Sonic no seguía las curvas)
+    "LIGHT_DASH_GIRO_MAX": 6.0,    # grados máximos de giro entre dos anillos seguidos (pla204: 5,9)
+    "LIGHT_DASH_HUECO": 50.0,      # m del hueco del desafío aéreo de la sección 9 (con 24 se cruzaba con air boost)
 }
 
 
@@ -550,8 +558,10 @@ CAMPOS_RING_DASH = CAMPOS_RING.replace("<IsLightSpeedDashTarget>false", "<IsLigh
 
 def anillos(desde, hasta, cada=2.5, lado=0.0, arriba=0.8, tramo=None, dash=False):
     """Fila de anillos. Con tramo, 'desde'/'hasta' son distancias sobre el tramo (siguen curvas y pendientes).
-    dash=True: anillos para el light speed dash (IsLightSpeedDashTarget)."""
+    dash=True: anillos para el light speed dash (IsLightSpeedDashTarget), siempre a LIGHT_DASH_SEPARACION (0.7.10)."""
     campos = CAMPOS_RING_DASH if dash else CAMPOS_RING
+    if dash:
+        cada = AJUSTES["LIGHT_DASH_SEPARACION"]
     d = desde
     while d <= hasta + 1e-6:
         if tramo:
@@ -560,6 +570,40 @@ def anillos(desde, hasta, cada=2.5, lado=0.0, arriba=0.8, tramo=None, dash=False
         else:
             obj("Ring", campos, d, lado, arriba)
         d += cada
+
+
+def fila_light_dash(control):
+    """Fila curva de anillos de light dash (0.7.10), con las medidas de Planet Wisp (pla204): 'control' son puntos
+    (adelante, lado, arriba) del cursor; se interpola una curva Catmull-Rom y se remuestrea a LIGHT_DASH_SEPARACION.
+    Avisa si dos anillos seguidos giran más de LIGHT_DASH_GIRO_MAX (con giros mayores Sonic sale recto)."""
+    ctl = [K.frame(*c) for c in control]
+    ext = [ctl[0]] + ctl + [ctl[-1]]
+    densos = []
+    for i in range(1, len(ext) - 2):
+        p0, p1, p2, p3 = ext[i - 1], ext[i], ext[i + 1], ext[i + 2]
+        for k in range(40):
+            t = k / 40
+            densos.append(tuple(0.5 * (2 * p1[j] + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t * t
+                                       + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t ** 3) for j in range(3)))
+    densos.append(ctl[-1])
+    sep = AJUSTES["LIGHT_DASH_SEPARACION"]
+    puntos, acum = [densos[0]], 0.0
+    for a, b in zip(densos, densos[1:]):
+        acum += math.dist(a, b)
+        if acum >= sep:
+            puntos.append(b)
+            acum = 0.0
+    giro_max = 0.0
+    for a, b, c in zip(puntos, puntos[1:], puntos[2:]):
+        u = [b[j] - a[j] for j in range(3)]
+        v = [c[j] - b[j] for j in range(3)]
+        cos = sum(x * y for x, y in zip(u, v)) / max(1e-9, math.hypot(*u) * math.hypot(*v))
+        giro_max = max(giro_max, math.degrees(math.acos(max(-1.0, min(1.0, cos)))))
+    if giro_max > AJUSTES["LIGHT_DASH_GIRO_MAX"]:
+        print(f"TEU_AVISO light dash ({seccion_actual()}): giro de {giro_max:.1f}° entre anillos (máx. {AJUSTES['LIGHT_DASH_GIRO_MAX']:g})")
+    for p in puntos:
+        obj("Ring", CAMPOS_RING_DASH, pos=p)
+    return puntos
 
 
 def dash_panel(adelante, lado=0.0, velocidad=100):
@@ -856,23 +900,43 @@ def plataformas_3d(n, largo=18.0, hueco=7.0, ancho=10.0, mats=("gris",), dz=(0.0
     ritmo("3d")
 
 
-def camara_loop(adelante, lado, arriba, radio, ancho, alto_camara=None):
-    """Plano fijo de un loop, como el primer loop de ghz200 (0.7.9): ObjCameraPan DELANTE del loop, en su centro
-    lateral, radio + 14 m antes del centro, a media altura, mirando a Sonic; el loop se ve de frente desde la entrada.
-    Volumen con Priority 1 y Ease 0,6 (como en ghz200) que cubre el loop desde su base ('arriba') hasta arriba, de
-    -radio-2 a radio+2: al dejar el loop, la cámara normal vuelve detrás de Sonic."""
-    alto_c = radio if alto_camara is None else alto_camara
-    id_pan = obj("ObjCameraPan", "<CameraPositionMode>1</CameraPositionMode><Distance>10</Distance><Ease_Time_Enter>0</Ease_Time_Enter>"
-                 "<Ease_Time_Leave>0</Ease_Time_Leave><FaceType>0</FaceType><Fovy>45</Fovy><GroundOffset>0</GroundOffset>"
-                 "<IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow><IsCollision>false</IsCollision>"
-                 "<IsControllable>false</IsControllable><OffsetPitch>0</OffsetPitch><OffsetYaw>0</OffsetYaw><Radius>1</Radius>"
-                 "<Range>10100</Range><Target><SetObjectID>0</SetObjectID></Target><TargetOffset_Front>0</TargetOffset_Front>"
-                 "<TargetOffset_Right>0</TargetOffset_Right><TargetOffset_Up>0</TargetOffset_Up><TargetOffset_Vel>0</TargetOffset_Vel>"
-                 "<TargetPositionFix><x>0</x><y>0</y><z>0</z></TargetPositionFix><Target_Type>0</Target_Type>"
-                 "<VelOffsetXYZ>0</VelOffsetXYZ><ZRot>0</ZRot>", adelante - radio - 14.0, lado, arriba + alto_c, q=(1.0, 0.0, 0.0, 0.0))
+def camara_pan(adelante, lado, arriba, distancia=6.0):
+    """ObjCameraPan fija en un punto que mira a Sonic (CameraPositionMode 1, campos de ghz200). Devuelve su ID."""
+    return obj("ObjCameraPan", f"<CameraPositionMode>1</CameraPositionMode><Distance>{distancia:g}</Distance><Ease_Time_Enter>0</Ease_Time_Enter>"
+               "<Ease_Time_Leave>0</Ease_Time_Leave><FaceType>0</FaceType><Fovy>45</Fovy><GroundOffset>0</GroundOffset>"
+               "<IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow><IsCollision>false</IsCollision>"
+               "<IsControllable>false</IsControllable><OffsetPitch>0</OffsetPitch><OffsetYaw>0</OffsetYaw><Radius>1</Radius>"
+               "<Range>10100</Range><Target><SetObjectID>0</SetObjectID></Target><TargetOffset_Front>0</TargetOffset_Front>"
+               "<TargetOffset_Right>0</TargetOffset_Right><TargetOffset_Up>0</TargetOffset_Up><TargetOffset_Vel>0</TargetOffset_Vel>"
+               "<TargetPositionFix><x>0</x><y>0</y><z>0</z></TargetPositionFix><Target_Type>0</Target_Type>"
+               "<VelOffsetXYZ>0</VelOffsetXYZ><ZRot>0</ZRot>", adelante, lado, arriba, q=(1.0, 0.0, 0.0, 0.0))
+
+
+def camara_loop(adelante, lado_entrada, lado_salida, arriba, radio, ancho_pista):
+    """Cámaras de un loop como el ÚLTIMO loop grande de ghz200 (0.7.10; la Pan frontal del primer loop, con Priority 1,
+    no se imponía a la cámara del modo dash). Allí hay 4 ObjCameraPan a los lados del loop, fuera de la pista y altas,
+    que acompañan la vuelta (las del lado de la entrada primero, la del lado de la salida al final), con volúmenes de
+    Priority 3 y 5. Aquí, con el loop centrado en 'adelante' (sube por delante del centro y baja por detrás):
+      A: subida (mitad delantera), cámara fuera de la pista por el lado de la entrada;
+      B: cima y bajada (mitad trasera), cámara por el lado de la salida;
+      C: salida a ras de suelo, cámara por el lado de la salida a media altura, prioridad +2.
+    Altura y separación en ajustes.conf (LOOP_CAMARA_*). Al dejar los volúmenes vuelve la cámara normal detrás."""
+    alto, sep = AJUSTES["LOOP_CAMARA_ALTO"] * radio, ancho_pista / 2 + AJUSTES["LOOP_CAMARA_LADO"] * radio
+    prio = int(AJUSTES["LOOP_CAMARA_PRIORIDAD"])
+    medio = (lado_entrada + lado_salida) / 2
+    ancho_vol = abs(lado_salida - lado_entrada) + ancho_pista + 4
     alto_vol = 2 * radio + 3
-    return volumen_camara(id_pan, adelante, lado, arriba - 0.5 + alto_vol / 2, 2 * radio + 4, ancho, alto_vol,
-                          entrar=0.6, salir=0.6, prioridad=1)
+    z_vol = arriba + 1.5 + (alto_vol - 1.5) / 2                     # desde 1,5 m: al llegar por el suelo aún no cambia
+    signo = 1.0 if lado_salida >= lado_entrada else -1.0
+    id_a = camara_pan(adelante, lado_entrada - signo * sep, arriba + alto)
+    volumen_camara(id_a, adelante + (radio + 2) / 2, medio, z_vol, radio + 2, ancho_vol, alto_vol - 1.5,
+                   entrar=0.8, salir=0.5, prioridad=prio)
+    id_b = camara_pan(adelante, lado_salida + signo * sep, arriba + alto)
+    volumen_camara(id_b, adelante - (radio + 2) / 2, medio, z_vol, radio + 2, ancho_vol, alto_vol - 1.5,
+                   entrar=0.8, salir=0.5, prioridad=prio)
+    id_c = camara_pan(adelante + radio + 6, lado_salida + signo * sep, arriba + radio * 0.8)
+    volumen_camara(id_c, adelante + (radio + 6) / 2, lado_salida, arriba + 1.0, radio + 6, ancho_pista + 2, 4.0,
+                   entrar=0.8, salir=0.5, prioridad=prio + 2)
 
 
 EXTRA_DASH = ("<Template>1</Template><m_CurveCorrectionForce>0</m_CurveCorrectionForce><m_IsLimitEdge>true</m_IsLimitEdge>"
@@ -912,7 +976,7 @@ def loop(nombre, radio=10.0, ancho=10.0, desplazamiento=14.0, mat="gris"):
         pts = [K.frame(-8, v, 0)] + [p(2 * math.pi * k / n, v) for k in range(n + 1)] + [K.frame(8, desplazamiento + v, 0)]
         rieles.append(pts)
     CURVAS.append((f"{nombre}@DP", rieles))
-    camara_loop(0.0, desplazamiento / 2, 0.0, radio, desplazamiento + ancho + 4, alto_camara=radio * 0.7)
+    camara_loop(0.0, 0.0, desplazamiento, 0.0, radio, ancho)
     cambio_modo("ChangeMode_3DtoDash", -6, ancho=ancho + 6, alto=25, extra=EXTRA_DASH)
     K.x -= desplazamiento * math.sin(K.th)
     K.y += desplazamiento * math.cos(K.th)
@@ -957,7 +1021,7 @@ def riel(nombre, largo, caida, plataforma_final=40, ancho=14, mat="gris", vuelta
         puntos = [p0, p1] + pts_loop + [K.frame(x1 + 0.5, desplazamiento, -caida * 0.4 - 0.1), p2]
         f = (x1 - 8 + 6) / (x1 + 6)                             # 8 m antes del loop, sobre el riel
         grind_dash(tuple(a + (b - a) * f for a, b in zip(p0, p1)))
-        camara_loop(x1, desplazamiento / 2, -caida * 0.4, vuelta, desplazamiento + 8)   # plano fijo (0.7.9)
+        camara_loop(x1, 0.0, desplazamiento, -caida * 0.4, vuelta, 1.0)   # cámaras del último loop de ghz200 (0.7.10)
     else:
         puntos = [p0, p1, p2]
     riel_grind(f"{nombre}@GR", puntos)
@@ -1137,6 +1201,40 @@ def volumen_camara(id_cam, adelante, lado, arriba, largo, ancho, alto, entrar=1.
                "<IsCastShadow>false</IsCastShadow><IsEnableCollision>false</IsEnableCollision><LineType>0</LineType><PositionList />"
                f"<Priority>{prioridad}</Priority><Range>300</Range><Shape_Type>0</Shape_Type><Target><SetObjectID>{id_cam}</SetObjectID></Target>",
                adelante, lado, arriba, q=q_yaw())
+
+
+def camara_cenital_anillo(centro, hueco, z0, z1, prioridad=2):
+    """Cámara cenital fija sobre un anillo alrededor de 'centro' (0.7.10), como la del riel de la torre del reloj de
+    euc200 (ObjCameraParallel Pitch 85-89, Distance 4-5, Fovy 70, volúmenes Priority 1-2): su orientación no depende
+    del rumbo de Sonic, así que no tiembla en las curvas del riel. Pitch y distancia en ajustes.conf (RIEL_CAMARA_*).
+    Volumen: 8 cajas cuadradas de 2·hueco de lado alineadas con el rumbo, alrededor de un hueco cuadrado de ±hueco que
+    deja libre el pozo central (y su cámara de planeo), entre las alturas z0 y z1 (Blender). La parte de arriba de la
+    pantalla mira hacia el rumbo del cursor."""
+    yaw = (math.degrees(K.th) - 90 + 180) % 360 - 180
+    id_cam = obj("ObjCameraParallel", f"<Distance>{AJUSTES['RIEL_CAMARA_DISTANCIA']:g}</Distance><Ease_Time_Enter>0</Ease_Time_Enter>"
+                 "<Ease_Time_Leave>0</Ease_Time_Leave><Fovy>70</Fovy><GroundOffset>0</GroundOffset><IsCameraView>false</IsCameraView>"
+                 "<IsCastShadow>false</IsCastShadow><IsCollision>false</IsCollision><IsControllable>false</IsControllable>"
+                 f"<OffsetPitch>0</OffsetPitch><OffsetYaw>0</OffsetYaw><Pitch>{AJUSTES['RIEL_CAMARA_PITCH']:g}</Pitch><Range>100000</Range>"
+                 "<Target><SetObjectID>0</SetObjectID></Target><TargetOffset_Front>0</TargetOffset_Front><TargetOffset_Right>0</TargetOffset_Right>"
+                 "<TargetOffset_Up>-0.2</TargetOffset_Up><TargetOffset_Vel>0</TargetOffset_Vel>"
+                 "<TargetPositionFix><x>0</x><y>0</y><z>0</z></TargetPositionFix><Target_Type>0</Target_Type>"
+                 f"<VelOffsetXYZ>0</VelOffsetXYZ><Yaw>{yaw:.1f}</Yaw><ZRot>0</ZRot>",
+                 pos=(centro[0], centro[1], z1), q=(1.0, 0.0, 0.0, 0.0))
+    lado_caja = 2 * hueco
+    c, s = math.cos(K.th), math.sin(K.th)
+    for i in (-1, 0, 1):
+        for j in (-1, 0, 1):
+            if i == 0 and j == 0:
+                continue
+            f, l = i * lado_caja, j * lado_caja                    # adelante / izquierda respecto al rumbo
+            pos = (centro[0] + f * c - l * s, centro[1] + f * s + l * c, (z0 + z1) / 2)
+            obj("ChangeVolumeCamera", f"<Collision_Height>{z1 - z0:g}</Collision_Height><Collision_Length>{lado_caja:g}</Collision_Length>"
+                f"<Collision_Width>{lado_caja:g}</Collision_Width><DefaultStatus>0</DefaultStatus><Ease_Time_Enter>1.2</Ease_Time_Enter>"
+                "<Ease_Time_Leave>1</Ease_Time_Leave><GroundOffset>0</GroundOffset><IsCameraView>false</IsCameraView>"
+                "<IsCastShadow>false</IsCastShadow><IsEnableCollision>false</IsEnableCollision><LineType>0</LineType><PositionList />"
+                f"<Priority>{prioridad}</Priority><Range>300</Range><Shape_Type>0</Shape_Type><Target><SetObjectID>{id_cam}</SetObjectID></Target>",
+                pos=pos, q=q_yaw())
+    return id_cam
 
 
 def camara_2d(desde, hasta, z_min=-25.0, z_max=35.0):

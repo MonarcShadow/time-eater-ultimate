@@ -42,7 +42,7 @@ def construir():
     carretera(10, ancho=14, mat="euc", muros=0)
     riel("s9_riel", 90, 8, plataforma_final=60, mat="euc")                     # tejado largo y sin paneles para frenar
     # hueco de 24 m que solo se cruza con el light speed dash (nuevo en 0.7.4): anillos desde 6 m antes del borde
-    anillos(-6, 26, cada=2.0, arriba=1.2, dash=True)
+    anillos(-6, 26, arriba=1.2, dash=True)                                     # a LIGHT_DASH_SEPARACION (0.7.10)
     suelo_muerte(0, 24, ancho=40, profundidad=18)
     K.avanzar(24)
     sumar_tiempo(24 / VEL["rapido"], 24)
@@ -51,14 +51,17 @@ def construir():
     # desafío aéreo (0.7.9; antes una espiral de light dash, en la que Sonic salía recto sin girar): resorte al final
     # del tejado, 2 Spinners para encadenar homing, fila recta de anillos de light dash y un aro de impulso que apunta
     # hacia abajo, al tejado de llegada (4 m más alto), donde un panel de dash lleva al otro lado.
+    # 0.7.10: la fila de 10 m se cruzaba con un air boost. Hueco de LIGHT_DASH_HUECO (50 m) y fila en S suave como la
+    # del inicio del desafío 4 de Planet Wisp (pla204: anillos a 1,13 m, ≤ 6° por anillo): ±2 m de lado, radio ~16 m.
     t = carretera(20, ancho=14, mat="euc", muros=0.5, mat_muro="cte")
-    HUECO, SUBIDA = 24.0, 4.0
+    HUECO, SUBIDA = max(24.0, AJUSTES["LIGHT_DASH_HUECO"]), 4.0
     with en(t, 17):
         resorte_vertical(0, 0, 0, velocidad=30, mantener=6)
     enemigo("sph", 4, 0, arriba=11.0)
     enemigo("sph", 10, 0, arriba=13.0)
-    anillos(12, 22, cada=1.5, arriba=13.0, dash=True)
-    aro_impulso_inclinado(23.5, 0, 12.0, velocidad=30, bajada_grados=40)
+    largo_fila = HUECO - 2.0 - 12.0
+    fila_light_dash([(12.0 + largo_fila * k / 8, 2.0 * math.sin(2 * math.pi * k / 8), 13.0 - k / 8) for k in range(9)])
+    aro_impulso_inclinado(HUECO - 0.5, 0, 12.0, velocidad=30, bajada_grados=40)
     suelo_muerte(0, HUECO, ancho=40, profundidad=18)
     K.avanzar(HUECO, SUBIDA)
     sumar_tiempo(HUECO / VEL["3d"] + 3.0, HUECO)

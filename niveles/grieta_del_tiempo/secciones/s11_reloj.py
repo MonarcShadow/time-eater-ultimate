@@ -9,13 +9,14 @@ GIRO_CAMARA_RELOJ = AJUSTES["GIRO_CAMARA_RELOJ"]
 
 
 def riel_secreto(centro, fondo_z, radio=24.0, paso=4.0):
-    """Riel semioculto (0.7.7): sale de encima de la torre, por el lado izquierdo de la boca (a 90° de la entrada; desde
-    la 0.7.9 solo se llega encadenando homing con dos Spinners), baja en espiral por FUERA de la torre (radio 24 m; la
+    """Riel semioculto (0.7.7): sale de encima de la torre, en diagonal delante-izquierda de la boca (desde la 0.7.10;
+    antes a 90° de la entrada; desde la 0.7.9 solo se llega encadenando homing con dos Spinners), baja en espiral por
+    FUERA de la torre con cámara cenital fija (radio 24 m; la
     explanada llega a 22 y las paredes a 15,5), da 2 vueltas, se abre
     hacia el túnel de salida y aterriza en la carretera de salida a ~46 m del centro, más allá del checkpoint del fondo:
     más rápido, pero sin ese checkpoint. Un engranaje decorativo en el borde lo tapa a medias. No suma tiempo (atajo)."""
     th = K.th                                            # rumbo de salida (el túnel está en esta dirección)
-    a0 = th + math.pi / 2                                # lado izquierdo de la boca
+    a0 = th + math.pi / 4                                # diagonal delante-izquierda (0.7.10; antes del todo a la izquierda)
     # 0.7.9: empieza ENCIMA de la torre, a 11 m del centro y 9,5 m sobre la explanada (las paredes llegan a +8):
     # solo se llega encadenando homing, Spinner del centro (+5, zona_planeo) → Spinner lateral (+8) → riel.
     enemigo("sph", pos=(centro[0] + 7 * math.cos(a0), centro[1] + 7 * math.sin(a0), centro[2] + 8.0))
@@ -48,7 +49,10 @@ def riel_secreto(centro, fondo_z, radio=24.0, paso=4.0):
     puntos = [(x, y, z0 + (z1 - z0) * s / largos[-1]) for (x, y), s in zip(plano, largos)]
     puntos[-1] = (puntos[-1][0], puntos[-1][1], z1)
     riel_grind("s11_riel_secreto@GR", puntos)
-    grind_dash(tuple(a + (b - a) * 0.3 for a, b in zip(puntos[0], puntos[1])), giro=math.pi / 2)   # sale hacia fuera (a0)
+    grind_dash(tuple(a + (b - a) * 0.3 for a, b in zip(puntos[0], puntos[1])), giro=a0 - th)   # sale hacia fuera (a0)
+    # cámara cenital fija como la del riel de la torre de euc200 (0.7.10): la de detrás temblaba en la espiral. Desde
+    # debajo de la explanada hasta 6 m sobre el fondo (el túnel de salida queda con la cámara normal), fuera del pozo.
+    camara_cenital_anillo(centro, 15.0, fondo_z + 6.0, centro[2] - 2.5)
     # engranaje decorativo en el borde de la explanada, delante del inicio del riel
     SOLO_VISUAL.disco((centro[0] + 22.5 * math.cos(a0 + 0.12), centro[1] + 22.5 * math.sin(a0 + 0.12), centro[2] + 3.0),
                       3.0, (math.cos(a0 + 0.12 + math.pi / 2), math.sin(a0 + 0.12 + math.pi / 2), 0.0), "euc", n=10, grosor=0.6)
