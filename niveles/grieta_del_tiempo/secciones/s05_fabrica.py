@@ -20,14 +20,18 @@ def construir():
 
     # torre (probada en el juego): escalera hacia adelante en 2D con resortes
     plataforma(0, 0, 0, 34, 10, alto=2, mat="euc")                # suelo de la torre bajo la escalera (si caes, vuelves al resorte)
-    decorado(-15, -12, 0, (30, 2, 45), "euc")                     # paredes de la torre
+    # paredes de la torre. La del lado de la cámara 2D (lado −) va más allá de la cámara (0.7.13: a −12 tapaba la
+    # subida con CAMARA_2D_DISTANCIA = 20), con una losa de suelo hasta ella para no caer antes del cambio a 2D
+    lado_cam = -(AJUSTES["CAMARA_2D_DISTANCIA"] + 4)
+    decorado(-15, lado_cam, 0, (30, 2, 45), "euc")
+    plataforma(-30, (-10 + lado_cam) / 2, 0, 30, -10 - lado_cam + 1, alto=2, mat="euc")
     decorado(-15, 12, 0, (30, 2, 45), "euc")
     decorado(17, 12, 0, (34, 2, 45), "euc")                       # la pared del fondo sigue a lo largo de la escalera
     costura(18, -29)
     izq = (-math.sin(K.th), math.cos(K.th), 0.0)
     for ad, alt, radio, mat_e in ((-24, 8, 5, "euc"), (-12, 19, 7, "pla"), (-2, 9, 4, "pla"),
                                   (8, 30, 6, "euc"), (18, 14, 5, "cpz"), (26, 38, 4, "euc")):
-        lados = (-10.7, 10.7) if ad < 0 else (10.7,)              # engranajes del reloj / de la fábrica en las paredes
+        lados = (lado_cam + 1.3, 10.7) if ad < 0 else (10.7,)              # engranajes del reloj / de la fábrica en las paredes
         for lado in lados:
             SOLO_VISUAL.disco(K.frame(ad + (3 if lado > 0 else 0), lado, alt), radio, izq, mat_e, n=12, grosor=0.5)
     a_2d(-8)

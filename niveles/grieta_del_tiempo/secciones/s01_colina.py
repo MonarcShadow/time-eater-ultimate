@@ -4,8 +4,9 @@ from base import *  # noqa: F401,F403
 
 def construir():
     seccion("1 Colina contaminada", checkpoint=False)
-    # pared detrás de la salida (0.7.11): si Sonic corre hacia atrás ya no cae al vacío
-    decorado(-0.5, 0, -2, (1.0, 16, 12), "ghz")    # pegada al borde de la carretera
+    # detrás de la salida (0.7.13): 12 m más de terreno acabado en semicírculo con pretil, para no caer al vacío
+    # corriendo hacia atrás (la pared de la 0.7.11, pegada a Sonic, hacía que la cámara empezara mirando desde arriba)
+    fondo_semicirculo(12, 7, "ghz", alto_pretil=2.5, mat_pretil="cpz")
     t = carretera(40, ancho=14, mat="ghz")
     anillos(10, 30, tramo=t)
     for i, s in enumerate((10, 22, 34)):                         # tuberías de Chemical Plant reventando la colina:
@@ -58,13 +59,14 @@ def construir():
             dash_panel(0)
     anillos(50, 58, cada=2.0, tramo=t)
     loop("s1_loop", radio=AJUSTES["LOOP_RADIO"], ancho=10, desplazamiento=14, mat="ghz")
-    # 0.7.12: al pie del loop, embudo de 12 a 6 m (el ancho de las plataformas 2D) con paredes sólidas de 4 m, y el
-    # cambio a 2D 2,8 m después de la salida del modo dash (+6), como al pie del último loop de ghz200. En la 0.7.11
-    # la carretera de salida medía 14 m, el 2D llegaba a +10 y se podía caer al vacío por los lados.
-    EMBUDO, CAMBIO_2D = 24.0, 6.0 + 2.8
-    carretera(EMBUDO, ancho=12, ancho_final=6, muros=4, muro_solido=True, mat="ghz", mat_muro="cpz")
+    # al pie del loop: recta de 12 m y embudo de 30 m de 12 a 6 m (el ancho de las plataformas 2D), con paredes
+    # sólidas de 4 m; el cambio a 2D va al FINAL del embudo (0.7.13). En la 0.7.12 iba a 2,8 m de la salida del modo
+    # dash (como en ghz200), con Sonic aún a un lado de la pista ancha: la cámara pasaba a 2D pero no se fijaba la
+    # profundidad y era fácil caerse.
+    carretera(12, ancho=12, muros=4, muro_solido=True, mat="ghz", mat_muro="cpz")
+    carretera(30, ancho=12, ancho_final=6, muros=4, muro_solido=True, mat="ghz", mat_muro="cpz")
 
     # tramo 2D: plataformas sobre tuberías y Mega Mack (el Egg Fighter de la salida se quitó: estaba dentro del margen;
     # la sección 2 ya empieza con uno)
     tramo_2d("s1_2d", (0, 1.5, 3.0, 1.0, 2.5, 0, 1.5, 3.0, 1.5, 0), mats=("ghz", "cpz"), tubos="cpz", mat_salida="ghz",
-             enemigos="ghz", cambio=CAMBIO_2D - EMBUDO, cambio_ghz=True)
+             enemigos="ghz", cambio=-1.0)

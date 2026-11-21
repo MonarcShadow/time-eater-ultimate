@@ -462,6 +462,26 @@ def carretera(largo, ancho=12.0, dz=0.0, giro_grados=0.0, muros=1.2, mat="gris",
     return Tramo(secciones)
 
 
+def fondo_semicirculo(largo, radio, mat, alto_pretil=2.5, mat_pretil=None, n=12):
+    """Terreno DETRÁS del cursor (0.7.13, inicio del nivel): losa recta de 'largo' m y 2 m de grosor (ancho 2·radio)
+    que termina en un semicírculo de 'radio' m con un pretil curvo sólido (cajas de 1 m de grosor) para no caer al
+    vacío. No mueve el cursor."""
+    plataforma(-largo, 0, 0, largo, 2 * radio, alto=2.0, mat=mat)
+    centro = K.frame(-largo, 0, 0)
+    SOLIDO.disco((centro[0], centro[1], centro[2] - 1.0), radio, (0.0, 0.0, 1.0), mat, n=2 * n, grosor=2.0)
+    mp = mat_pretil or mat
+    r = radio - 0.5
+    for k in range(n):                                   # de la izquierda (+90°) a la derecha (+270°) por detrás
+        a0 = K.th + math.pi / 2 + math.pi * k / n
+        a1 = K.th + math.pi / 2 + math.pi * (k + 1) / n
+        p0 = (centro[0] + r * math.cos(a0), centro[1] + r * math.sin(a0))
+        p1 = (centro[0] + r * math.cos(a1), centro[1] + r * math.sin(a1))
+        SOLIDO.caja(((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, centro[2] - 2.0),
+                    (math.hypot(p1[0] - p0[0], p1[1] - p0[1]) + 0.4, 1.0, alto_pretil + 2.0),
+                    math.atan2(p1[1] - p0[1], p1[0] - p0[0]), mp)
+    MIN_Z[0] = min(MIN_Z[0], centro[2] - 2.0)
+
+
 def plataforma(adelante, lado, arriba, largo, ancho, alto=2.0, mat="gris", rumbo=None):
     x, y, z = K.frame(adelante + largo / 2, lado, arriba - alto)
     SOLIDO.caja((x, y, z), (largo, ancho, alto), K.th if rumbo is None else rumbo, mat)
@@ -923,14 +943,14 @@ def plataformas_3d(n, largo=18.0, hueco=7.0, ancho=10.0, mats=("gris",), dz=(0.0
     for i in range(n):
         if i:
             if enemigos:                     # Spinner volando sobre el hueco: enlaza el homing entre plataformas
-                enemigo("sph", hueco / 2, 0, arriba=max(0.0, dz[i % len(dz)]) + 5.0)
+                enemigo("sph", hueco / 2, 0, arriba=max(0.0, dz[i % len(dz)]) + 4.0)   # +4 desde la 0.7.13
             K.avanzar(hueco, dz[i % len(dz)])
             sumar_tiempo(hueco / VEL["plataformas"], hueco)
         t = carretera(largo, ancho=ancho, mat=mats[i % len(mats)], muros=0)
         anillos(4, largo - 4, cada=3, tramo=t)
         if enemigos and i == n - 1:          # Spinner sobre la mitad de la última plataforma
             with en(t, largo / 2):
-                enemigo("sph", 0, 0, arriba=5.0)
+                enemigo("sph", 0, 0, arriba=4.0)
     ritmo("3d")
 
 

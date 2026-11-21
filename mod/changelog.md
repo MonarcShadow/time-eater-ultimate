@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.13
+Grieta del Tiempo:
+- **Salida del loop:** el terreno después del loop es más largo, con una recta y un embudo de 30 m con paredes sólidas. El paso a 2D ocurre donde termina el embudo, con Sonic ya centrado.
+- **Torre 2D de la sección 5:** la pared del lado de la cámara queda detrás de la cámara (según `CAMARA_2D_DISTANCIA`) y ya no tapa la subida con resortes.
+- **Inicio del nivel:** detrás de la salida hay 12 m más de terreno, que terminan en un semicírculo con pretil. La cámara empieza detrás de Sonic.
+- **Plataformas 3D:** los Spinners están 1 m más bajos.
+
 ## 0.7.12
 Grieta del Tiempo:
 - **Salida del loop (sección 1):** el paso a 2D ocurre justo al pie del loop, como en el último loop del Green Hill original. El terreno de salida es un embudo que se estrecha hasta el ancho de las plataformas 2D, con paredes sólidas a los lados: ya no se cae al vacío.
