@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.9
+Grieta del Tiempo:
+- **Loop de Green Hill:** la cámara ahora está como en el primer loop del Green Hill original: fija delante del loop, a media altura, lo muestra de frente. El loop es un sólido con grosor (antes con boost parecía que se atravesaba).
+- **Loop del riel (sección 4):** con el mismo plano fijo.
+- **Riel secreto de la torre:** ahora empieza encima de la torre y solo se alcanza encadenando homing con el Spinner del centro y uno nuevo al costado.
+- **Desafío aéreo (sección 9):** en lugar de la espiral, un resorte, dos Spinners para encadenar homing, una fila recta de light dash y un aro de impulso que te baja al tejado siguiente, donde un panel de dash te lleva al otro lado.
+
 ## 0.7.8
 Grieta del Tiempo:
 - **Loop de Green Hill:** al subir por el loop la cámara pasa a un plano fijo desde el costado que muestra el loop entero, y vuelve detrás de Sonic al salir.

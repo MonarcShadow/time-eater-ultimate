@@ -9,18 +9,30 @@ GIRO_CAMARA_RELOJ = AJUSTES["GIRO_CAMARA_RELOJ"]
 
 
 def riel_secreto(centro, fondo_z, radio=24.0, paso=4.0):
-    """Riel semioculto (0.7.7): sale del borde izquierdo de la explanada de la boca (a 90° de la entrada), baja en
-    espiral por FUERA de la torre (radio 24 m; la explanada llega a 22 y las paredes a 15,5), da ~2 vueltas, se abre
+    """Riel semioculto (0.7.7): sale de encima de la torre, por el lado izquierdo de la boca (a 90° de la entrada; desde
+    la 0.7.9 solo se llega encadenando homing con dos Spinners), baja en espiral por FUERA de la torre (radio 24 m; la
+    explanada llega a 22 y las paredes a 15,5), da 2 vueltas, se abre
     hacia el túnel de salida y aterriza en la carretera de salida a ~46 m del centro, más allá del checkpoint del fondo:
     más rápido, pero sin ese checkpoint. Un engranaje decorativo en el borde lo tapa a medias. No suma tiempo (atajo)."""
     th = K.th                                            # rumbo de salida (el túnel está en esta dirección)
-    a0 = th + math.pi / 2                                # inicio: lado izquierdo de la boca
-    a_fin = th + math.pi / 4                             # fin de la espiral; después, curva de apertura hasta 'th'
-    giro = (a_fin - a0) - 2 * 2 * math.pi                # sentido horario, ~2 vueltas
+    a0 = th + math.pi / 2                                # lado izquierdo de la boca
+    # 0.7.9: empieza ENCIMA de la torre, a 11 m del centro y 9,5 m sobre la explanada (las paredes llegan a +8):
+    # solo se llega encadenando homing, Spinner del centro (+5, zona_planeo) → Spinner lateral (+8) → riel.
+    enemigo("sph", pos=(centro[0] + 7 * math.cos(a0), centro[1] + 7 * math.sin(a0), centro[2] + 8.0))
     plano = []                                           # (x, y) en planta
+    for r in (11.0, 14.0, 17.0):                         # tramo radial hacia fuera, por encima de las paredes
+        plano.append((centro[0] + r * math.cos(a0), centro[1] + r * math.sin(a0)))
+    for k in range(1, 9):                                # curva suave de radial a tangente (1/8 de vuelta)
+        u = k / 8
+        a = a0 - (math.pi / 4) * u * u
+        r = 17 + (radio - 17) * (1 - (1 - u) ** 2)
+        plano.append((centro[0] + r * math.cos(a), centro[1] + r * math.sin(a)))
+    a_ini = a0 - math.pi / 4
+    a_fin = th + math.pi / 4                             # fin de la espiral; después, curva de apertura hasta 'th'
+    giro = (a_fin - a_ini) - 2 * 2 * math.pi             # sentido horario, 2 vueltas
     n = max(8, int(abs(giro) * radio / paso))
-    for k in range(n + 1):
-        a = a0 + giro * k / n
+    for k in range(1, n + 1):
+        a = a_ini + giro * k / n
         plano.append((centro[0] + radio * math.cos(a), centro[1] + radio * math.sin(a)))
     for k in range(1, 9):                                # apertura: de tangente a radial, sin esquinas
         u = k / 8
@@ -32,11 +44,11 @@ def riel_secreto(centro, fondo_z, radio=24.0, paso=4.0):
     largos = [0.0]
     for p, q in zip(plano, plano[1:]):
         largos.append(largos[-1] + math.hypot(q[0] - p[0], q[1] - p[1]))
-    z0, z1 = centro[2] + 0.35, fondo_z + 0.35
+    z0, z1 = centro[2] + 9.5, fondo_z + 0.35
     puntos = [(x, y, z0 + (z1 - z0) * s / largos[-1]) for (x, y), s in zip(plano, largos)]
     puntos[-1] = (puntos[-1][0], puntos[-1][1], z1)
     riel_grind("s11_riel_secreto@GR", puntos)
-    grind_dash(tuple(a + (b - a) * 0.3 for a, b in zip(puntos[0], puntos[1])))
+    grind_dash(tuple(a + (b - a) * 0.3 for a, b in zip(puntos[0], puntos[1])), giro=math.pi / 2)   # sale hacia fuera (a0)
     # engranaje decorativo en el borde de la explanada, delante del inicio del riel
     SOLO_VISUAL.disco((centro[0] + 22.5 * math.cos(a0 + 0.12), centro[1] + 22.5 * math.sin(a0 + 0.12), centro[2] + 3.0),
                       3.0, (math.cos(a0 + 0.12 + math.pi / 2), math.sin(a0 + 0.12 + math.pi / 2), 0.0), "euc", n=10, grosor=0.6)

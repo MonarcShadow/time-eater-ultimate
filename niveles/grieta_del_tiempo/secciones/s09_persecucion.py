@@ -48,30 +48,24 @@ def construir():
     sumar_tiempo(24 / VEL["rapido"], 24)
     # segunda tanda de tejados (nuevo en 0.7.0), con Egg Fighters y GunHunters, y otro riel más largo
     tejados(4, primero=5, enemigos=True)
-    # espiral de anillos de light dash (0.7.7; antes una barra de acrobacia, difícil de usar suelta en el aire):
-    # hueco de 16 m y el tejado siguiente 10 m más alto. La hélice da 1 vuelta alrededor del eje de avance con el radio
-    # modulado por sin(pi·f): empieza y acaba tangente hacia adelante (en la 0.7.7, 2 vueltas de radio fijo arrancaban
-    # de lado y Sonic salía recto). Anillos cada 1 m de recorrido real. Sin light dash no se llega.
-    carretera(20, ancho=14, mat="euc", muros=0.5, mat_muro="cte")
-    HUECO, SUBIDA, RADIO, VUELTAS, PASO = 16.0, 10.0, 3.5, 1, 1.0
-
-    def helice(f):
-        a, r = 2 * math.pi * VUELTAS * f, RADIO * math.sin(math.pi * f)
-        return (-2 + (HUECO + 4) * f, r * math.sin(a), 1.2 + SUBIDA * f + r * (1 - math.cos(a)))
-    muestras = [helice(i / 2000) for i in range(2001)]
-    arco = [0.0]
-    for p, q in zip(muestras, muestras[1:]):
-        arco.append(arco[-1] + math.dist(p, q))
-    anillos(-8, -3, cada=PASO, arriba=1.2, dash=True)                         # arranque sobre el tejado
-    siguiente = 0.0
-    for p, s in zip(muestras, arco):
-        if s >= siguiente - 1e-6:
-            obj("Ring", CAMPOS_RING_DASH, *p)
-            siguiente += PASO
+    # desafío aéreo (0.7.9; antes una espiral de light dash, en la que Sonic salía recto sin girar): resorte al final
+    # del tejado, 2 Spinners para encadenar homing, fila recta de anillos de light dash y un aro de impulso que apunta
+    # hacia abajo, al tejado de llegada (4 m más alto), donde un panel de dash lleva al otro lado.
+    t = carretera(20, ancho=14, mat="euc", muros=0.5, mat_muro="cte")
+    HUECO, SUBIDA = 24.0, 4.0
+    with en(t, 17):
+        resorte_vertical(0, 0, 0, velocidad=30, mantener=6)
+    enemigo("sph", 4, 0, arriba=11.0)
+    enemigo("sph", 10, 0, arriba=13.0)
+    anillos(12, 22, cada=1.5, arriba=13.0, dash=True)
+    aro_impulso_inclinado(23.5, 0, 12.0, velocidad=30, bajada_grados=40)
     suelo_muerte(0, HUECO, ancho=40, profundidad=18)
     K.avanzar(HUECO, SUBIDA)
-    sumar_tiempo(HUECO / VEL["3d"] + 2.0, HUECO)
-    carretera(20, ancho=14, mat="ssz", muros=0.5, mat_muro="cte")
+    sumar_tiempo(HUECO / VEL["3d"] + 3.0, HUECO)
+    t = carretera(24, ancho=14, mat="ssz", muros=0.5, mat_muro="cte")
+    with en(t, 9):
+        dash_panel(0)
+    anillos(3, 7, cada=2.0, tramo=t)
     carretera(10, ancho=14, mat="euc", muros=0)
     t = riel("s9_riel_b", 110, 10, plataforma_final=50, mat="ssz")
     anillos(10, 40, cada=5, tramo=t)

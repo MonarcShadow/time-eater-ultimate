@@ -593,6 +593,18 @@ def rampa_salto(adelante, lado=0.0, boost=50, normal=35, angulo=0):
         q=q_superficie(math.pi))      # el frente del JumpBoard es el contrario al del DashPanel (probado en 0.4.0)
 
 
+def aro_impulso_inclinado(adelante, lado=0.0, arriba=1.6, velocidad=30, bajada_grados=40.0, mantener=5):
+    """DashRing que lanza hacia adelante y hacia ABAJO 'bajada_grados'. Su frente es -Z local (como aro_impulso):
+    q = q_Y(yaw + 180°) · q_X(alfa); el frente -Z queda con componente vertical +sin(alfa), así que alfa = -bajada."""
+    phi = math.pi / 2 + K.th + math.pi
+    alfa = -math.radians(bajada_grados)
+    c1, s1, c2, s2 = math.cos(phi / 2), math.sin(phi / 2), math.cos(alfa / 2), math.sin(alfa / 2)
+    obj("DashRing", f"<FirstSpeed>{velocidad}</FirstSpeed><GroundOffset>0</GroundOffset><IsCastShadow>true</IsCastShadow>"
+        "<IsChangeCameraWhenChangePath>false</IsChangeCameraWhenChangePath><IsChangePath>false</IsChangePath>"
+        f"<IsHeadToVelocity>false</IsHeadToVelocity><IsTo3D>false</IsTo3D><KeepVelocityDistance>{mantener}</KeepVelocityDistance>"
+        "<OutOfControl>0.5</OutOfControl><Range>60</Range>", adelante, lado, arriba, q=(c1 * c2, c1 * s2, s1 * c2, -s1 * s2))
+
+
 def aro_impulso(adelante, lado=0.0, arriba=1.6, velocidad=25):
     """DashRing. Su frente es -Z local, como el JumpBoard (probado en 0.5.0: con el giro del DashPanel lanzaba hacia atrás)."""
     obj("DashRing", f"<FirstSpeed>{velocidad}</FirstSpeed><GroundOffset>0</GroundOffset><IsCastShadow>true</IsCastShadow>"
@@ -703,12 +715,12 @@ def cambio_bgm(adelante, cue=0):
                adelante, 0.0, 0.0, q=q_yaw())
 
 
-def grind_dash(pos_blender, velocidad=60):
+def grind_dash(pos_blender, velocidad=60, giro=0.0):
     # OutOfControl 0.25 como en cpz200/csc200/pla200: con 2.5 (de ghz200) Sonic no podía saltar en el riel y seguía
-    # sin control unos segundos al salir (prueba de la 0.7.1)
+    # sin control unos segundos al salir (prueba de la 0.7.1). giro: radianes respecto al rumbo del cursor.
     obj("GrindDashPanel", "<GroundOffset>0</GroundOffset><IsCastShadow>true</IsCastShadow><IsFront>true</IsFront>"
         f"<IsStartVelocityConstant>true</IsStartVelocityConstant><OutOfControl>0.25</OutOfControl><Range>100</Range><Speed>{velocidad}</Speed>",
-        pos=pos_blender)
+        pos=pos_blender, q=q_yaw(giro))
 
 
 def cambio_modo(tipo, adelante, salida=False, ancho=30, alto=40, extra="", arriba=0.0):
@@ -844,6 +856,25 @@ def plataformas_3d(n, largo=18.0, hueco=7.0, ancho=10.0, mats=("gris",), dz=(0.0
     ritmo("3d")
 
 
+def camara_loop(adelante, lado, arriba, radio, ancho, alto_camara=None):
+    """Plano fijo de un loop, como el primer loop de ghz200 (0.7.9): ObjCameraPan DELANTE del loop, en su centro
+    lateral, radio + 14 m antes del centro, a media altura, mirando a Sonic; el loop se ve de frente desde la entrada.
+    Volumen con Priority 1 y Ease 0,6 (como en ghz200) que cubre el loop desde su base ('arriba') hasta arriba, de
+    -radio-2 a radio+2: al dejar el loop, la cámara normal vuelve detrás de Sonic."""
+    alto_c = radio if alto_camara is None else alto_camara
+    id_pan = obj("ObjCameraPan", "<CameraPositionMode>1</CameraPositionMode><Distance>10</Distance><Ease_Time_Enter>0</Ease_Time_Enter>"
+                 "<Ease_Time_Leave>0</Ease_Time_Leave><FaceType>0</FaceType><Fovy>45</Fovy><GroundOffset>0</GroundOffset>"
+                 "<IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow><IsCollision>false</IsCollision>"
+                 "<IsControllable>false</IsControllable><OffsetPitch>0</OffsetPitch><OffsetYaw>0</OffsetYaw><Radius>1</Radius>"
+                 "<Range>10100</Range><Target><SetObjectID>0</SetObjectID></Target><TargetOffset_Front>0</TargetOffset_Front>"
+                 "<TargetOffset_Right>0</TargetOffset_Right><TargetOffset_Up>0</TargetOffset_Up><TargetOffset_Vel>0</TargetOffset_Vel>"
+                 "<TargetPositionFix><x>0</x><y>0</y><z>0</z></TargetPositionFix><Target_Type>0</Target_Type>"
+                 "<VelOffsetXYZ>0</VelOffsetXYZ><ZRot>0</ZRot>", adelante - radio - 14.0, lado, arriba + alto_c, q=(1.0, 0.0, 0.0, 0.0))
+    alto_vol = 2 * radio + 3
+    return volumen_camara(id_pan, adelante, lado, arriba - 0.5 + alto_vol / 2, 2 * radio + 4, ancho, alto_vol,
+                          entrar=0.6, salir=0.6, prioridad=1)
+
+
 EXTRA_DASH = ("<Template>1</Template><m_CurveCorrectionForce>0</m_CurveCorrectionForce><m_IsLimitEdge>true</m_IsLimitEdge>"
               "<m_IsReverseCameraEnable>false</m_IsReverseCameraEnable><m_PathCorrectionForce>0.5</m_PathCorrectionForce>")
 
@@ -862,33 +893,26 @@ def loop(nombre, radio=10.0, ancho=10.0, desplazamiento=14.0, mat="gris"):
         r = radio - sobre                                           # sobre > 0: hacia el centro (encima de la pista)
         return K.frame(r * math.sin(a), lateral(a) + v, radio - r * math.cos(a))
 
+    # sólido de 1 m de grosor (0.7.9): en la 0.7.8 cada cara estaba duplicada en el mismo plano con la normal invertida
+    # y con boost parecía que se atravesaba el suelo
     for k in range(n):
         a0, a1 = 2 * math.pi * k / n, 2 * math.pi * (k + 1) / n
-        cara = [p(a0, -ancho / 2), p(a1, -ancho / 2), p(a1, ancho / 2), p(a0, ancho / 2)]
         am = (a0 + a1) / 2
         centro = p(am, 0, radio)                                    # centro del loop a esa altura del recorrido
         fuera = p(am, 0, -radio)
-        SOLIDO.cara(cara, mat, hacia=centro)                        # la pista (cara hacia el centro)
-        SOLIDO.cara(cara, mat, hacia=fuera)                         # y por fuera, para que colisione por los dos lados
+        pista = [p(a0, -ancho / 2), p(a1, -ancho / 2), p(a1, ancho / 2), p(a0, ancho / 2)]
+        dorso = [p(a0, -ancho / 2, -1), p(a1, -ancho / 2, -1), p(a1, ancho / 2, -1), p(a0, ancho / 2, -1)]
+        SOLIDO.cara(pista, mat, hacia=centro)                       # la pista (cara hacia el centro)
+        SOLIDO.cara(dorso, mat, hacia=fuera)                        # el dorso, 1 m más afuera
+        for v in (-ancho / 2, ancho / 2):                           # laterales
+            lado_pt = p(am, v * 3, 0)
+            SOLIDO.cara([p(a0, v), p(a1, v), p(a1, v, -1), p(a0, v, -1)], mat, hacia=lado_pt)
     rieles = []
     for v in (-(ancho / 2 - 1), ancho / 2 - 1):
         pts = [K.frame(-8, v, 0)] + [p(2 * math.pi * k / n, v) for k in range(n + 1)] + [K.frame(8, desplazamiento + v, 0)]
         rieles.append(pts)
     CURVAS.append((f"{nombre}@DP", rieles))
-    # plano fijo del loop (0.7.8): ObjCameraPan (campos de ghz200) al costado contrario al desplazamiento, a la altura
-    # del centro, mirando a Sonic. Su volumen empieza a 1,5 m del suelo: al entrar y al salir del loop Sonic va por
-    # debajo y la cámara es la normal; en cuanto sube (~30°) pasa al plano fijo y vuelve detrás al bajar al final.
-    id_pan = obj("ObjCameraPan", "<CameraPositionMode>1</CameraPositionMode><Distance>10</Distance><Ease_Time_Enter>0</Ease_Time_Enter>"
-                 "<Ease_Time_Leave>0</Ease_Time_Leave><FaceType>0</FaceType><Fovy>60</Fovy><GroundOffset>0</GroundOffset>"
-                 "<IsCameraView>false</IsCameraView><IsCastShadow>false</IsCastShadow><IsCollision>false</IsCollision>"
-                 "<IsControllable>false</IsControllable><OffsetPitch>0</OffsetPitch><OffsetYaw>0</OffsetYaw><Radius>1</Radius>"
-                 "<Range>100000</Range><Target><SetObjectID>0</SetObjectID></Target><TargetOffset_Front>0</TargetOffset_Front>"
-                 "<TargetOffset_Right>0</TargetOffset_Right><TargetOffset_Up>0</TargetOffset_Up><TargetOffset_Vel>0</TargetOffset_Vel>"
-                 "<TargetPositionFix><x>0</x><y>0</y><z>0</z></TargetPositionFix><Target_Type>0</Target_Type>"
-                 "<VelOffsetXYZ>0</VelOffsetXYZ><ZRot>0</ZRot>", 0.0, -25.0, radio, q=(1.0, 0.0, 0.0, 0.0))
-    alto_vol = 2 * radio + 2 - 1.5
-    volumen_camara(id_pan, 0.0, desplazamiento / 2, 1.5 + alto_vol / 2, 2 * radio + 4, desplazamiento + ancho + 4, alto_vol,
-                   entrar=0.3, salir=0.5)
+    camara_loop(0.0, desplazamiento / 2, 0.0, radio, desplazamiento + ancho + 4, alto_camara=radio * 0.7)
     cambio_modo("ChangeMode_3DtoDash", -6, ancho=ancho + 6, alto=25, extra=EXTRA_DASH)
     K.x -= desplazamiento * math.sin(K.th)
     K.y += desplazamiento * math.cos(K.th)
@@ -933,6 +957,7 @@ def riel(nombre, largo, caida, plataforma_final=40, ancho=14, mat="gris", vuelta
         puntos = [p0, p1] + pts_loop + [K.frame(x1 + 0.5, desplazamiento, -caida * 0.4 - 0.1), p2]
         f = (x1 - 8 + 6) / (x1 + 6)                             # 8 m antes del loop, sobre el riel
         grind_dash(tuple(a + (b - a) * f for a, b in zip(p0, p1)))
+        camara_loop(x1, desplazamiento / 2, -caida * 0.4, vuelta, desplazamiento + 8)   # plano fijo (0.7.9)
     else:
         puntos = [p0, p1, p2]
     riel_grind(f"{nombre}@GR", puntos)
@@ -1103,14 +1128,14 @@ def camara_aterrizaje(centro, fondo_z, dist_salida=30.0, alto=10.0, lado=28.0):
         pos=(centro[0], centro[1], fondo_z + alto / 2), q=(1.0, 0.0, 0.0, 0.0))
 
 
-def volumen_camara(id_cam, adelante, lado, arriba, largo, ancho, alto, entrar=1.0, salir=1.0):
+def volumen_camara(id_cam, adelante, lado, arriba, largo, ancho, alto, entrar=1.0, salir=1.0, prioridad=0):
     """ChangeVolumeCamera orientado con el rumbo (q_yaw): Length a lo largo del recorrido, Width lateral, Height
     vertical (misma convención que los triggers de cambio de modo); (adelante, lado, arriba) = centro de la caja."""
     return obj("ChangeVolumeCamera", f"<Collision_Height>{alto:g}</Collision_Height><Collision_Length>{largo:g}</Collision_Length>"
                f"<Collision_Width>{ancho:g}</Collision_Width><DefaultStatus>0</DefaultStatus><Ease_Time_Enter>{entrar:g}</Ease_Time_Enter>"
                f"<Ease_Time_Leave>{salir:g}</Ease_Time_Leave><GroundOffset>0</GroundOffset><IsCameraView>false</IsCameraView>"
                "<IsCastShadow>false</IsCastShadow><IsEnableCollision>false</IsEnableCollision><LineType>0</LineType><PositionList />"
-               f"<Priority>0</Priority><Range>300</Range><Shape_Type>0</Shape_Type><Target><SetObjectID>{id_cam}</SetObjectID></Target>",
+               f"<Priority>{prioridad}</Priority><Range>300</Range><Shape_Type>0</Shape_Type><Target><SetObjectID>{id_cam}</SetObjectID></Target>",
                adelante, lado, arriba, q=q_yaw())
 
 
