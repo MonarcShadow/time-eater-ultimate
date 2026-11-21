@@ -1,0 +1,169 @@
+# Changelog
+
+## 0.7.9
+Grieta del Tiempo:
+- **Loop de Green Hill:** la cámara ahora está como en el primer loop del Green Hill original: fija delante del loop, a media altura, lo muestra de frente. El loop es un sólido con grosor (antes con boost parecía que se atravesaba).
+- **Loop del riel (sección 4):** con el mismo plano fijo.
+- **Riel secreto de la torre:** ahora empieza encima de la torre y solo se alcanza encadenando homing con el Spinner del centro y uno nuevo al costado.
+- **Desafío aéreo (sección 9):** en lugar de la espiral, un resorte, dos Spinners para encadenar homing, una fila recta de light dash y un aro de impulso que te baja al tejado siguiente, donde un panel de dash te lleva al otro lado.
+
+## 0.7.8
+Grieta del Tiempo:
+- **Loop de Green Hill:** al subir por el loop la cámara pasa a un plano fijo desde el costado que muestra el loop entero, y vuelve detrás de Sonic al salir.
+- **Cámara de los tramos 2D** más alejada y algo inclinada para que se vea el suelo. Se ajusta en `ajustes.conf` (`CAMARA_2D_*`).
+- **Espiral de light dash** más suave: una vuelta que empieza y termina hacia adelante, con un anillo cada metro.
+
+## 0.7.7
+Grieta del Tiempo:
+- **Barra de giro centrada:** el juego la coloca desde un extremo. Su largo, altura y posición se ajustan en `ajustes.conf` (`BARRA_GIRO_*`).
+- **Barras de salvavidas en los tramos 2D:** dos por tramo, pegadas a la pared bajo el borde de una plataforma. Si caes por el hueco, te agarras y saltas de vuelta.
+- **Espiral de light dash** (sección 9): reemplaza la barra suelta; una hélice de anillos sube 10 m sobre un hueco.
+- **Loop de Green Hill** (sección 1) y **loop en el riel de la autopista** (sección 4), en prueba.
+- **Riel secreto de la torre del reloj** (sección 11): desde el borde izquierdo de la boca, baja en espiral por fuera de la torre y aterriza después del túnel. Es más rápido, pero te saltas el checkpoint nuevo del fondo.
+
+## 0.7.6
+Grieta del Tiempo:
+- **Paneles de salto en pared:** un panel por pared, a la medida, que cubre toda la cara (antes quedaban zonas sin panel).
+- **Agua (sección 3):** los dos tramos usan el agua que funciona (se cruza con panel o boost).
+- **Barra de giro** (nueva, sección 3): se llega con homing, Sonic queda girando y sale con altura al pulsar salto. Está sobre un hueco de 18 m, con el borde de llegada 4 m más alto.
+
+## 0.7.5
+Grieta del Tiempo:
+- **Agua (sección 3):** el primer tipo de agua mataba aunque se fuera con boost; ahora los dos tramos prueban los otros dos tipos del mar de Seaside Hill. Un poste morado marca el primer tramo y dos postes el segundo.
+- **Rampas de los tejados:** el ángulo se cambia en `ajustes.conf` (`RAMPA_TEJADO_ANGULO`, ahora 25°; a 45° se salía demasiado alto).
+- **Pozo de salto en pared:** los paneles son más pequeños y van más altos; ya no tapan el paso por debajo del bloque.
+- **Barra de acrobacia:** ahora está en un tramo 2D (en los niveles originales solo se usan en 2D; en 3D no se cogía).
+
+## 0.7.4
+Grieta del Tiempo:
+- **Cámaras de los planeos** ajustadas (giro 180 en los dos pozos). El pozo del reloj ahora mide 195 m (~10 s de planeo) y tiene una flecha morada en el fondo que apunta a la salida.
+- **Spinner en el centro de cada planeo**, 5 m por encima de la boca: con un homing desde el borde se cae centrado.
+- **Tejados (sección 9):** cada tejado tiene una pequeña rampa a 45° en el borde; yendo rápido (panel o boost) lanza al siguiente.
+- **Agua (sección 3):** dos tramos de 30 m de mar que se cruzan corriendo con el boost (dos variantes del agua de Seaside Hill, en prueba).
+- **Gimmicks nuevos, en prueba:**
+  - anillos de light speed dash sobre un hueco de 24 m (sección 9);
+  - barra de acrobacia (sección 9);
+  - pozo de salto en pared en 2D (sección 10);
+  - tirolina (sección 10).
+  - Si alguno cierra el juego, `GIMMICKS_NUEVOS = 0` en `ajustes.conf` los quita.
+- **Salida de prueba:** `INICIO_SECCION` en `ajustes.conf` hace aparecer a Sonic en el checkpoint de la sección indicada (0 = salida normal).
+
+## 0.7.3
+Grieta del Tiempo:
+- **El homing ya no se corta en los cambios entre 3D y 2D:** hay 40 m (unos 2 s) sin huecos ni enemigos antes y después de cada cambio. La distancia se cambia en `ajustes.conf` (`MARGEN_CAMBIO_2D`).
+- **Cámara al aterrizar de un planeo:** en el fondo de los dos pozos, la cámara se pone detrás de Sonic mirando al túnel de salida, sin esperar a que se mueva.
+- **Planeo de la sección 11:** cámara con giro 180 (probado en la 0.7.2). El pozo final usa −45, en prueba.
+- **`RECONSTRUIR_GRIETA.bat`:** después de cambiar `ajustes.conf`, un doble clic reconstruye el nivel y lo copia al juego.
+
+## 0.7.2
+Grieta del Tiempo:
+- **Rieles:** ahora se puede saltar en el riel y Sonic responde al salir. El panel del riel bloqueaba los controles 2,5 s; ahora 0,25 s, como en los niveles originales.
+- **Planeo de la sección 11:** cámara girada 180° más, para que la salida quede delante.
+- **Planeo final (sección 12):** pozo de 370 m, unos **20 s de planeo**. Sin las plataformas blancas del centro; los escombros van pegados a las paredes.
+- **Más enemigos en las plataformas** para encadenar homing attacks: dos en cada plataforma 3D, uno en cada plataforma 2D y un Spinner volando sobre cada hueco.
+- **Homing con más alcance** (solo en este nivel): 32 m en 3D (antes 21) y 20 m en 2D (antes 13,5). Se cambia en `niveles/grieta_del_tiempo/ajustes.conf`, igual que los ángulos de cámara de los planeos.
+- **Taker** un metro más alto (3 m).
+- **Música (experimento):** un activador al principio intenta que la música suene desde la primera carga. También en el laboratorio.
+
+## 0.7.1
+- **Grieta del Tiempo:** arreglado el fallo por el que, a partir de la sección 7, los objetos dejaban de funcionar (anillos, paneles, checkpoints) y no se podía terminar el nivel. El nivel salía del "mundo" de física del juego; ahora el escenario declara un mundo que lo cubre entero, como hace el escenario del Time Eater.
+- **Taker** (Crisis City) un poco más alto: ya no queda medio hundido en el suelo (en Grieta y en el laboratorio).
+
+## 0.7.0
+**Grieta del Tiempo alargada a unos 5 minutos** (estimación: ~330 s, ~8,9 km; antes ~1,5 km y menos de 60 s). Pasa de 8 a 14 secciones:
+1. Colina contaminada: más colinas, islotes y un 2D más largo.
+2. Calle sobre las ruinas: plaza de ruinas con nubes que rebotan y una avenida de City Escape.
+3. Mar en llamas: pasarela larga sobre el mar (la futura carrera sobre el agua) y costa en llamas.
+4. **Autopista entre nubes** (nueva): Speed Highway sobre Sky Sanctuary, con riel y letreros en 2D.
+5. Fábrica dentro de la torre: nave de Planet Wisp antes de la torre y bajada en 2D después.
+6. **Tanque en la playa** (nueva): puentes rotos de Seaside Hill y un tanque de Chemical Plant (el futuro tramo bajo el agua).
+7. Rascacielos invertido: segunda fachada con quickstep y andamios en 2D.
+8. **Crisis al revés** (nueva): calles de Crisis City con lava y plataformas flotantes.
+9. Persecución desincronizada: el doble de tejados y un segundo riel.
+10. **Jardín de cristal** (nueva): Planet Wisp + Sky Sanctuary, con un 2D largo y un quickstep.
+11. **Dentro del reloj** (nueva): un primer planeo, más corto y en otra dirección.
+12. Caída de las 9 eras (igual).
+13. **Eco del pasado** (nueva): la colina del principio, desteñida y con las curvas al revés.
+14. Blanco: fragmentos en 2D y una avenida final antes de la meta.
+
+Además:
+- **Enemigos de las 9 zonas** (unos 50): Motora, Lander, Egg Robo, Spinner, GunHunter, Pawn de Seaside Hill, Taker, Egg Fighter y Pawn de Planet Wisp.
+- **13 checkpoints**, uno al principio de cada sección.
+- Nubes y plataformas giratorias de Sky Sanctuary como extras opcionales.
+- **Laboratorio:** un enemigo de cada zona nueva, para saber cuál falla si alguno cierra el juego.
+
+## 0.6.2
+- **Laboratorio:** arreglado el cierre del juego al saltar en la nube de Sky Sanctuary (faltaba cargar las animaciones de Sonic de esa zona, `SonicSsz`).
+- **Grieta del Tiempo:** cámara de planeo girada 135° para mirar hacia la salida del pozo, y transición más suave (2 s).
+
+## 0.6.1
+- **Grieta del Tiempo:** cámara de planeo que mira desde arriba durante la caída, para ver los escombros.
+- **Grieta del Tiempo:** cuatro Egg Fighters de Rooftop Run en la sección 2 (dos antes de la calle y dos al aterrizar de las islas).
+- **Laboratorio:** segundo experimento con objetos de Sky Sanctuary: una nube que hace rebotar (a 95 m) y una plataforma giratoria (a 120 m).
+
+## 0.6.0
+- **Nivel laboratorio** en el portal del rival **Shadow**: una pista recta de 170 m para probar cosas arriesgadas sin tocar Grieta del Tiempo.
+- Primer experimento: dos **Egg Fighters de Rooftop Run** (a 45 m y 70 m del inicio). Para cargarlos, el escenario se añade al árbol de enemigos del juego.
+- Si el laboratorio cierra el juego, basta con no entrar a ese portal; el resto del mod no cambia.
+
+## 0.5.1
+- El planeo termina más abajo, a unos 10 m del suelo.
+- Segunda rampa con el mismo impulso con y sin boost (antes con boost se pasaba del resorte).
+- Aro de impulso de prueba girado: ahora debe lanzar hacia la meta.
+
+## 0.5.0
+Grieta del Tiempo, fase B: las 8 secciones con más forma.
+- **Cielo**: el de Perfect Chaos en lugar del fondo negro.
+- **Costuras moradas** (franja y dos postes) en cada unión entre secciones.
+- S1: acantilados de Green Hill, tuberías de Chemical Plant que cruzan sobre la pista, un tanque y charcos de Mega Mack.
+- S2: fachadas de City Escape a ambos lados, rematadas con trozos de ruina de Sky Sanctuary; columnas y asfalto desprendido en las islas.
+- S3: el mar alrededor de la pista, **manchas de lava que hacen daño**, pilares (uno ya sin color) y un tornado.
+- S4: la pared de la torre sigue toda la escalera y lleva engranajes.
+- S5: ventanas iluminadas, tanques y agua en la cascada.
+- S6: casas vecinas y chimeneas en los tejados.
+- S7: escombros repartidos para el planeo lento y anillos en espiral.
+- S8: explanada blanca más ancha, columnas desteñidas, aguja más larga y el ojo del Time Eater como disco.
+- Prueba: un aro de impulso (DashRing) cerca de la meta, para comprobar su orientación.
+
+## 0.4.3
+- Planeo más lento en el pozo (parámetros de Sonic propios del nivel): la caída dura unos 6 s en vez de menos de 3.
+- Primera rampa con un poco más de impulso, para aterrizar encima de la isla.
+- Meta más alta: ya no queda parcialmente bajo el suelo.
+
+## 0.4.2
+- Arreglo del cierre del juego al entrar en la caída de planeo: el escenario ahora carga las animaciones de planeo de Sonic (`SonicDiving`), que el juego solo cargaba en Chemical Plant, Speed Highway, Planet Wisp y el Egg Dragoon.
+- Primera rampa (sección 2): más impulso y ángulo empinado. Segunda rampa (sección 3): más impulso.
+- Meta de vuelta a su altura original (se mantiene en vertical).
+
+## 0.4.1
+Correcciones de Grieta del Tiempo tras la primera prueba:
+- Rampas de salto giradas 180° (ahora lanzan hacia adelante) y meta en vertical.
+- Paneles de impulso inclinados según la pendiente del suelo.
+- Curvas sin paneles, más abiertas y con muro exterior de 3 m.
+- Resorte del escalón (sección 5) y último resorte de la torre con más fuerza.
+- Cambios a 2D y de vuelta a 3D lejos de los precipicios.
+- Riel de grind visible bajo los pies de Sonic.
+- Pozo final: la entrada es un agujero en una explanada, con un tejado largo antes para frenar, y se añade la zona de planeo (caída libre).
+
+## 0.4.0
+- **Grieta del Tiempo v0 (caja gris)** en el portal de Perfect Chaos (Acto 2, Sonic moderno): el recorrido completo de las 8 secciones del diseño con geometría simple (~1,4 km). Los bloques de colores marcan qué zona aporta cada pieza.
+  1. Colina contaminada (3D + plataformas en 2D) · 2. Calle sobre las ruinas (quickstep cuesta abajo + rampa a islas flotantes) · 3. Mar en llamas (pista ancha en curva + rampa) · 4. Fábrica dentro de la torre (subida en 2D con resortes) · 5. Rascacielos invertido (bajada empinada + escalón con resorte) · 6. Persecución (tejados con huecos + riel de grind) · 7. Caída de las 9 eras (pozo de 110 m) · 8. Blanco (riel corto y meta).
+- Solo objetos básicos (anillos, paneles de impulso, resortes, rampas, cambios a 2D/quickstep, meta). Enemigos y gimmicks de cada zona llegan en próximas versiones.
+
+## 0.3.0
+- Nivel de prueba moderno en el portal de **Perfect Chaos** (Acto 2, Sonic moderno): un camino recto de 130 m en 3D con dos paneles de impulso, anillos y la meta (GoalRing) a 100 m.
+- El nivel de prueba del Death Egg Robot (Acto 1) se mantiene igual (probado: se puede completar, la meta y la puntuación funcionan).
+
+## 0.2.0
+- Nivel de prueba "solo un camino" en el portal del **Death Egg Robot** (Acto 1, Sonic clásico): un camino recto de 40 m con 5 anillos y la meta a 25 m del inicio.
+- Es una prueba técnica de todo el proceso (Blender → Hedgehog Converter → Havok Converter → juego). El modo difícil del Death Egg Robot sigue siendo el jefe original.
+
+## 0.1.2
+- Las actualizaciones ahora se sirven desde la rama `hmm-update` (compatible con Hedge Mod Manager 7.15 y 8).
+
+## 0.1.1
+- Versión de prueba para verificar las actualizaciones desde Hedge Mod Manager.
+
+## 0.1.0
+- Reinicio del proyecto desde cero (el trabajo anterior está en `legacy/` del repositorio).
+- Estructura base del mod y actualizaciones automáticas desde GitHub Releases.
