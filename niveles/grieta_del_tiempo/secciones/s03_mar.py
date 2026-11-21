@@ -12,32 +12,26 @@ def mar(t, cada=26):
 def construir():
     seccion("3 Mar en llamas")
     costura(14)
-    # pasarela recta sobre el mar con dos tramos de agua de 30 m que se cruzan corriendo con el boost (0.7.4).
-    # Cada tramo usa una variante de colisión de agua de Seaside Hill (base.AGUA): primero B = sea02, después
-    # C = inside02 (0.7.5; la A = sea01 mataba aunque se fuera con boost). Postes morados al inicio de cada tramo:
-    # uno en el primero, dos en el segundo, para que se sepa cuál funciona.
-    # Pawns con lanza de Seaside Hill y dos manchas de lava.
+    # pasarela recta sobre el mar con dos tramos de agua de 30 m que se cruzan corriendo con panel o boost (0.7.4;
+    # agua de Seaside Hill sea02, confirmada en la 0.7.5, ver base.AGUA). Pawns con lanza y dos manchas de lava.
     def postes(t, *ss):
         for s in ss:
             with en(t, s):
                 tubo((0, 14, -3), (0, 14, 8), 1.4, "ssh", n=8)
                 tubo((0, -14, -3), (0, -14, 8), 1.4, "ssh", n=8)
 
-    for n, (variante, largo, enemigos_s) in enumerate((("B", 40, (12,)), ("C", 40, (10,)))):
+    for n, (largo, enemigos_s) in enumerate(((40, (12,)), (40, (10,)))):
         t = carretera(largo, ancho=20, mat="ssh", muros=0.6)
         mar(t)
         for s in enemigos_s:
             with en(t, s):
                 enemigo("ssh", 0, -4 if n == 0 else 4)
-        with en(t, largo):
-            for k in range(n + 1):                          # 1 o 2 postes morados a la izquierda: número del tramo
-                tubo((0, 8 + 1.5 * k, 0), (0, 8 + 1.5 * k, 4), 0.3, "costura", solido=False, n=6)
         anillos(6, largo - 2, cada=6, tramo=t)
         postes(t, largo - 10)
         with en(t, largo - 8):
             dash_panel(0)                                   # coger velocidad antes del agua
         ritmo("rapido")
-        agua(0, 30, ancho=20, variante=variante)
+        agua(0, 30, ancho=20, variante="B")
         anillos(2, 28, cada=3, arriba=0.8)
         visual(-0.1, 0, 0.03, (0.4, 20, 0.02), "costura")   # marca del inicio del agua
         K.avanzar(30)
@@ -52,6 +46,20 @@ def construir():
             charco_dano(0, lado, 8, 5)
     anillos(5, 55, cada=6, tramo=t)
     postes(t, 30)
+    # barra de giro (IronPole3D, nuevo en 0.7.6): hueco de 18 m con la barra en el centro, 3 m por encima; el borde de
+    # llegada está 4 m más alto. Homing a la barra, girar y salir con salto. Con GIMMICKS_NUEVOS = 0, hueco de 7 m.
+    if gimmicks_activos():
+        barra_giro(9, arriba=3.0, largo=8)
+        anillos(-4, 6, cada=2.5, arriba=1.5)
+        suelo_muerte(0, 18, ancho=40, profundidad=15)
+        K.avanzar(18, 4.0)
+        sumar_tiempo(18 / VEL["3d"] + 1.5, 18)
+    else:
+        suelo_muerte(0, 7, ancho=40, profundidad=15)
+        K.avanzar(7)
+        sumar_tiempo(7 / VEL["3d"], 7)
+    t = carretera(20, ancho=20, mat="ssh", muros=0.6)
+    mar(t)
     # curva a la izquierda sin paneles y con muro exterior (derecho) de 3 m; después, recta con panel y rampa
     t = carretera(130, ancho=34, giro_grados=35, mat="ssh", mat_muro="ssh", muros=0.6, muro_der=3.0)
     mar(t)

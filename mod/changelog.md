@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.6
+Grieta del Tiempo:
+- **Paneles de salto en pared:** un panel por pared, a la medida, que cubre toda la cara (antes quedaban zonas sin panel).
+- **Agua (sección 3):** los dos tramos usan el agua que funciona (se cruza con panel o boost).
+- **Barra de giro** (nueva, sección 3): se llega con homing, Sonic queda girando y sale con altura al pulsar salto. Está sobre un hueco de 18 m, con el borde de llegada 4 m más alto.
+
 ## 0.7.5
 Grieta del Tiempo:
 - **Agua (sección 3):** el primer tipo de agua mataba aunque se fuera con boost; ahora los dos tramos prueban los otros dos tipos del mar de Seaside Hill. Un poste morado marca el primer tramo y dos postes el segundo.

@@ -198,12 +198,12 @@ SOLIDO = Malla()      # recorrido + decoración sólida (visual y colisión)
 SOLO_VISUAL = Malla()  # rieles de grind, costuras, ventanas, agua (sin colisión)
 MUERTE = Malla()       # suelos de muerte bajo los huecos (solo colisión, tag DEAD)
 DANO = Malla()         # zonas que hacen daño, p. ej. lava (solo colisión, tag DAMAGE)
-# Agua para correr encima con el boost (solo colisión). Copian cuerpos de agua de ssh200.phy.hkx; los tags los añade
-# construir_nivel.ps1 a los del HavokConverter.ini. A = sea01 (material 12 muerte, swa_col_player 5): descartada en la
-# 0.7.4, Sonic moría aunque fuera con boost. B = sea02 (material 2 agua profunda, 10); C = inside02 (material 14 agua
-# sin muerte, 23). La prueba de la 0.7.5 dirá cuál sirve.
-AGUA = {"B": Malla(), "C": Malla()}
-TAGS_AGUA = {"B": "AGUAHONDA", "C": "AGUASINMUERTE"}
+# Agua para correr encima con el boost (solo colisión). Copia el cuerpo sea02 de ssh200.phy.hkx (material 2 agua
+# profunda + swa_col_player 10; tag AGUAHONDA, que construir_nivel.ps1 añade a los del HavokConverter.ini): con panel o
+# boost se cruza (prueba de la 0.7.5). Descartadas: sea01 (material 12 + 5) mata aunque se vaya con boost (0.7.4);
+# inside02 (material 14 + 23) no mata pero se atraviesa: es agua para nadar dentro (servirá para el tanque de CPZ).
+AGUA = {"B": Malla()}
+TAGS_AGUA = {"B": "AGUAHONDA"}
 GUIAS = []             # (nombre, ID) de las splines guía (tirolinas): se declaran en Stage.stg.xml como <Guide>
 OBJETOS = []           # (xml) set data
 CURVAS = []            # (nombre, [[puntos riel 1], [puntos riel 2]?])
@@ -873,6 +873,17 @@ def barra_acrobacia(adelante, lado=0.0, arriba=2.0):
                "<IsCastShadow>true</IsCastShadow><Range>30</Range>", adelante, lado, arriba, q=q_yaw())
 
 
+def barra_giro(adelante, arriba=3.0, largo=8.0, lado=0.0):
+    """IronPole3D (barra horizontal de ssh200): se llega con homing, Sonic queda girando y sale con altura al pulsar
+    salto. Definida en #SonicActionCommon/#SystemCommon (común). El eje de la barra es el Z local (en cte200 la
+    IronPole2D tiene rotación identidad y cruza el plano 2D): con q_yaw(pi/2) queda cruzada a la pista. Centrada en la
+    pista: si Position fuera un extremo y no el centro, la barra seguiría pasando por el eje."""
+    return obj("IronPole3D", "<CameraEaseTimeEnter>0.6</CameraEaseTimeEnter><CameraEaseTimeKeep>0</CameraEaseTimeKeep>"
+               "<CameraEaseTimeLeave>1.2</CameraEaseTimeLeave><CameraID><SetObjectID>0</SetObjectID></CameraID>"
+               f"<GroundOffset>0</GroundOffset><GuideSide>1</GuideSide><IsCastShadow>true</IsCastShadow><PoleLen>{largo:g}</PoleLen>"
+               "<Range>100</Range>", adelante, lado, arriba, q=q_yaw(math.pi / 2))
+
+
 def barra_2d(nombre, hueco=16.0, subida=3.0, ancho=8.0, mat="gris", mat_llegada=None):
     """Tramo 2D con una barra de acrobacia sobre un hueco. Se llama al final de una carretera recta de al menos 20 m.
     Respeta MARGEN_CAMBIO_2D: entrada plana, hueco con el JumpPole a 3 m del borde y 2 m por encima, plataforma de
@@ -897,12 +908,14 @@ def barra_2d(nombre, hueco=16.0, subida=3.0, ancho=8.0, mat="gris", mat_llegada=
     return carretera(8 + margen, ancho=14, mat=mat_llegada or mat)
 
 
-def panel_pared(adelante, arriba, alto, ancho, mira_atras):
-    """WallJumpBlock (ssh200): zona de salto en pared pegada a la cara de un muro, centrada en 'arriba'. Su cara útil
-    es -Z local; mira_atras=True: la cara mira hacia Sonic (muro delante); False: mira hacia adelante (muro detrás)."""
+def panel_pared(adelante, z0, z1, ancho, mira_atras):
+    """WallJumpBlock (ssh200): panel de salto en pared, visible y sólido, pegado a la cara de un muro, de la altura z0 a
+    z1 (sobre el cursor). Convención confirmada en la prueba de la 0.7.5: Position = centro y el panel mide 2 × SizeY de
+    alto (y 2 × SizeX de ancho). Su cara útil es -Z local; mira_atras=True: la cara mira hacia Sonic (muro delante);
+    False: mira hacia adelante (muro detrás)."""
     return obj("WallJumpBlock", f"<GroundOffset>0</GroundOffset><IsCastShadow>false</IsCastShadow><Range>30</Range>"
-               f"<SizeX>{ancho:g}</SizeX><SizeY>{alto:g}</SizeY><SizeZ>0.1</SizeZ>",
-               adelante, 0.0, arriba, q=q_yaw(0.0 if mira_atras else math.pi))
+               f"<SizeX>{ancho / 2:g}</SizeX><SizeY>{(z1 - z0) / 2:g}</SizeY><SizeZ>0.1</SizeZ>",
+               adelante, 0.0, (z0 + z1) / 2, q=q_yaw(0.0 if mira_atras else math.pi))
 
 
 def tirolina(nombre, largo, caida, alto_cable=2.0, llegada=40, ancho=14, mat="gris"):
@@ -947,16 +960,10 @@ def pozo_pared_2d(nombre, alto=14.0, ancho=8.0, mat="gris", mat_panel="cpz"):
     anillos(2, x_pozo - 6, cada=2.0)
     anillos(x_pared + 3, total - 3, cada=2.0, arriba=alto + 0.8)
     if gimmicks_activos():
-        # El WallJumpBlock es un panel visible y SÓLIDO (prueba de la 0.7.4: uno de SizeY ~13 tapaba el paso bajo el
-        # bloque trasero). No se sabe si su Position es el centro, la base o la parte de arriba, ni si SizeY está en
-        # metros: por eso columnas de paneles pequeños (SizeY 1,5, como los de ssh200). El trasero más bajo empieza
-        # por encima de 5,5 m con cualquier convención, y el paso bajo el bloque (0..3,5 m) queda libre.
-        for z in (2.5, 5.5, 8.5, 11.5):
-            if z < alto - 1.0:
-                panel_pared(x_pared - 0.05, z, 1.5, 2.0, mira_atras=True)
-        for z in (7.0, 10.0, 13.0, 16.0):
-            if z < alto + 2.5:
-                panel_pared(x_pozo + 0.05, z, 1.5, 2.0, mira_atras=False)
+        # un panel por cara, a la medida de la cara (convención en panel_pared; en la 0.7.5 las columnas de paneles
+        # pequeños dejaban sin panel la parte baja del bloque trasero y el último metro de la pared delantera)
+        panel_pared(x_pared - 0.05, 0.05, alto - 0.05, 3.0, mira_atras=True)
+        panel_pared(x_pozo + 0.05, 3.55, alto + 2.95, 3.0, mira_atras=False)
     else:
         for x, z0, z1 in ((x_pared - 0.06, 0.5, alto - 0.3), (x_pozo + 0.06, 3.8, alto + 2.7)):
             visual(x, 0, z0, (0.1, 3.0, z1 - z0), mat_panel)                         # placas de color en las caras

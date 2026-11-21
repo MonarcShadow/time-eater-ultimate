@@ -115,9 +115,10 @@ $hkx = Join-Path $build "teu_camino_col.phy.hkx"
 $iniHavok = Join-Path $BinLibgens "HavokConverter.ini"
 $tags = ([regex]::Match([IO.File]::ReadAllText($iniHavok), '(?m)^property_tags=(.*)$')).Groups[1].Value.TrimEnd("`r")
 if (-not $tags) { throw "HavokConverter.ini no tiene property_tags (vuelve a ejecutar descargar_herramientas.ps1)" }
-# Tags propios: agua para correr encima, copiada de ssh200.phy.hkx: material (1260399450) + swa_col_player
-# (2088238466) con el valor que tienen allí. sea01 (material 12 + 5) se descartó en la 0.7.4: Sonic moría con boost.
-$tags = $tags.TrimEnd('"') + 'AGUAHONDA|Agua de Seaside Hill sea02 (profunda)|1260399450 2 0 2088238466 10 0 |AGUASINMUERTE|Agua de Seaside Hill inside02 (sin muerte)|1260399450 14 0 2088238466 23 0 |"'
+# Tag propio: agua para correr encima con el boost, copiada de sea02 en ssh200.phy.hkx: material (1260399450) 2 +
+# swa_col_player (2088238466) 10 (confirmada en la 0.7.5). Descartadas: sea01 (12 + 5) mata; inside02 (14 + 23) se
+# atraviesa (agua para nadar dentro): su tag sería '1260399450 14 0 2088238466 23 0'.
+$tags = $tags.TrimEnd('"') + 'AGUAHONDA|Agua de Seaside Hill sea02 (profunda)|1260399450 2 0 2088238466 10 0 |"'
 $r = Invoke-ConversorGui "HavokConverter.exe" "HavokConverter.ini" ([ordered]@{
     model_source_paths = (ConvertTo-RutaQt "$salidaBl\teu_camino_col.fbx"); output_file = (ConvertTo-RutaQt $hkx); mode = 0
     position_x = 0; position_y = 0; position_z = 0; scale_x = 100; scale_y = 100; scale_z = 100
