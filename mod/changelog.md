@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.7
+Grieta del Tiempo:
+- **Barra de giro centrada:** el juego la coloca desde un extremo. Su largo, altura y posición se ajustan en `ajustes.conf` (`BARRA_GIRO_*`).
+- **Barras de salvavidas en los tramos 2D:** dos por tramo, pegadas a la pared bajo el borde de una plataforma. Si caes por el hueco, te agarras y saltas de vuelta.
+- **Espiral de light dash** (sección 9): reemplaza la barra suelta; una hélice de anillos sube 10 m sobre un hueco.
+- **Loop de Green Hill** (sección 1) y **loop en el riel de la autopista** (sección 4), en prueba.
+- **Riel secreto de la torre del reloj** (sección 11): desde el borde izquierdo de la boca, baja en espiral por fuera de la torre y aterriza después del túnel. Es más rápido, pero te saltas el checkpoint nuevo del fondo.
+
 ## 0.7.6
 Grieta del Tiempo:
 - **Paneles de salto en pared:** un panel por pared, a la medida, que cubre toda la cara (antes quedaban zonas sin panel).

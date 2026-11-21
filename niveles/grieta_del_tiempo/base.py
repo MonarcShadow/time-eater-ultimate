@@ -28,7 +28,10 @@ AJUSTES_POR_DEFECTO = {
     "INICIO_SECCION": 0.0,         # 0 = salida original; N = checkpoint de la sección N (solo para pruebas)
     "RAMPA_TEJADO_ALTO": 1.2,      # m; cuña en el borde de los tejados de la sección 9
     "RAMPA_TEJADO_ANGULO": 25.0,   # grados de esa cuña (a 45° se salía demasiado alto, 0.7.4)
-    "GIMMICKS_NUEVOS": 1.0,        # 1 = JumpPole, Pulley y WallJumpBlock (0.7.4, sin probar); 0 = sin ellos
+    "GIMMICKS_NUEVOS": 1.0,        # 1 = JumpPole, Pulley, WallJumpBlock e IronPole; 0 = sin ellos
+    "BARRA_GIRO_LARGO": 6.0,       # m; PoleLen de la IronPole3D de la sección 3
+    "BARRA_GIRO_ALTO": 3.0,        # m sobre la pista
+    "BARRA_GIRO_LADO": 3.0,        # m a la izquierda del eje donde va su extremo (la barra crece hacia la derecha)
 }
 
 
@@ -746,6 +749,9 @@ def riel_grind(nombre, puntos):
     for a, b in zip(puntos, puntos[1:]):        # barra visible del riel (sin colisión)
         dx, dy, dz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
         largo = math.hypot(dx, dy)
+        if abs(dz) > largo:                     # tramo muy empinado (loop): cilindro en cualquier dirección
+            SOLO_VISUAL.prisma((a[0], a[1], a[2] - 0.2), (b[0], b[1], b[2] - 0.2), 0.09, "costura", n=6, tapas=False)
+            continue
         n = max(1, int(largo / 2))
         for i in range(n):
             t0, t1 = i / n, (i + 1) / n
@@ -774,6 +780,7 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
     n = len(alturas)
     entrada = max(0.0, margen - 12.0)                       # pista de entrada (parte de la primera plataforma)
     largo_final = max(largo_plat + 3.0, margen - 8.0)       # última plataforma (hasta el cambio de vuelta a 3D)
+    huecos_salvavidas = {1, n - 3} if n >= 4 else set()      # el segundo y el penúltimo hueco
     largos = [largo_plat] * n
     largos[0] += entrada
     largos[-1] = largo_final + (entrada if n == 1 else 0.0)
@@ -794,6 +801,12 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
             if i < n - 1:                                   # en el centro de la parte normal de la plataforma
                 enemigo(enemigos, x + largo - largo_plat / 2, 0, arriba=h + ENEMIGOS[enemigos][1])
                 enemigo("sph", x + largo + hueco / 2, 0, arriba=max(h, alturas[i + 1]) + 4.0)
+        if i in huecos_salvavidas and gimmicks_activos():
+            # JumpPole de salvavidas (0.7.7): pegado a la cara de la plataforma siguiente, bajo su borde. Si Sonic cae
+            # por el hueco lo coge, gira y sale hacia arriba. Un pilar prolonga la cara 3 m hacia abajo como pared.
+            x_sig, h_sig = x + largo + hueco, alturas[i + 1]
+            plataforma(x_sig, 0, h_sig - 3.0, 2.0, ancho, alto=3.0, mat=mats[(i + 1) % len(mats)])
+            barra_acrobacia(x_sig - 1.0, 0, h_sig - 3.5)
         x += largo + hueco
     x -= hueco
     K.avanzar(x, alturas[-1])          # la carretera de salida va a la altura de la última plataforma
@@ -826,6 +839,45 @@ def plataformas_3d(n, largo=18.0, hueco=7.0, ancho=10.0, mats=("gris",), dz=(0.0
     ritmo("3d")
 
 
+EXTRA_DASH = ("<Template>1</Template><m_CurveCorrectionForce>0</m_CurveCorrectionForce><m_IsLimitEdge>true</m_IsLimitEdge>"
+              "<m_IsReverseCameraEnable>false</m_IsReverseCameraEnable><m_PathCorrectionForce>0.5</m_PathCorrectionForce>")
+
+
+def loop(nombre, radio=10.0, ancho=10.0, desplazamiento=14.0, mat="gris"):
+    """Loop de terreno (0.7.7, sin probar): una vuelta vertical completa desde el final de una carretera, con
+    desplazamiento lateral para que la salida no choque con la entrada. Sonic va guiado por una spline @DP de dos rieles
+    (modo dash: ChangeMode_3DtoDash a la entrada y, girado, a la salida; campos de ghz200). El cursor sale desplazado
+    al costado con el mismo rumbo. Conviene llegar con paneles de dash."""
+    n = 48
+
+    def lateral(a):
+        return desplazamiento * (1 - math.cos(a / 2)) / 2          # 0 → desplazamiento sin tirones
+
+    def p(a, v=0.0, sobre=0.0):
+        r = radio - sobre                                           # sobre > 0: hacia el centro (encima de la pista)
+        return K.frame(r * math.sin(a), lateral(a) + v, radio - r * math.cos(a))
+
+    for k in range(n):
+        a0, a1 = 2 * math.pi * k / n, 2 * math.pi * (k + 1) / n
+        cara = [p(a0, -ancho / 2), p(a1, -ancho / 2), p(a1, ancho / 2), p(a0, ancho / 2)]
+        am = (a0 + a1) / 2
+        centro = p(am, 0, radio)                                    # centro del loop a esa altura del recorrido
+        fuera = p(am, 0, -radio)
+        SOLIDO.cara(cara, mat, hacia=centro)                        # la pista (cara hacia el centro)
+        SOLIDO.cara(cara, mat, hacia=fuera)                         # y por fuera, para que colisione por los dos lados
+    rieles = []
+    for v in (-(ancho / 2 - 1), ancho / 2 - 1):
+        pts = [K.frame(-8, v, 0)] + [p(2 * math.pi * k / n, v) for k in range(n + 1)] + [K.frame(8, desplazamiento + v, 0)]
+        rieles.append(pts)
+    CURVAS.append((f"{nombre}@DP", rieles))
+    cambio_modo("ChangeMode_3DtoDash", -6, ancho=ancho + 6, alto=25, extra=EXTRA_DASH)
+    K.x -= desplazamiento * math.sin(K.th)
+    K.y += desplazamiento * math.cos(K.th)
+    registrar_eje(0.0)
+    sumar_tiempo(2 * math.pi * radio / VEL["rapido"], 2 * math.pi * radio)
+    cambio_modo("ChangeMode_3DtoDash", 6, salida=True, ancho=ancho + 6, alto=25, extra=EXTRA_DASH)
+
+
 def quickstep(nombre, largo, dz=0.0, ancho=16, mat="gris", mat_muro=None):
     """Tramo de quickstep (3 carriles a 4 m) cuesta abajo/arriba. Entrada a -5 m y salida 20 m antes del final.
     Devuelve el Tramo. Los obstáculos van centrados en los carriles (lado -4, 0, 4)."""
@@ -843,13 +895,28 @@ def quickstep(nombre, largo, dz=0.0, ancho=16, mat="gris", mat_muro=None):
     return t
 
 
-def riel(nombre, largo, caida, plataforma_final=40, ancho=14, mat="gris"):
+def riel(nombre, largo, caida, plataforma_final=40, ancho=14, mat="gris", vuelta=None, desplazamiento=4.0):
     """Riel de grind sobre el vacío desde el final de una carretera: baja 'caida' m en 'largo' m.
-    Crea la carretera de llegada (sin paneles, para frenar)."""
+    vuelta: radio de un loop vertical a mitad del riel (o None). Crea la carretera de llegada (sin paneles, para frenar)."""
     p0 = K.frame(-6, 0, 0.35)
     p1 = K.frame(largo * 0.45, 0, -caida * 0.4)
     p2 = K.frame(largo, 0, -caida)
-    riel_grind(f"{nombre}@GR", [p0, p1, p2])
+    if vuelta:
+        # loop vertical en p1 (0.7.7): círculo de radio 'vuelta' que avanza 0 m y se desplaza 'desplazamiento' m al
+        # costado (para no cruzarse consigo mismo); el resto del riel sigue desplazado. Panel de grind justo antes.
+        x1 = largo * 0.45
+        pts_loop = []
+        for k in range(1, 32):
+            a = 2 * math.pi * k / 32
+            suave = (1 - math.cos(a / 2)) / 2                   # 0 → 1 sin tirones
+            pts_loop.append(K.frame(x1 + vuelta * math.sin(a), desplazamiento * suave, -caida * 0.4 + vuelta * (1 - math.cos(a))))
+        p2 = K.frame(largo, desplazamiento, -caida)
+        puntos = [p0, p1] + pts_loop + [K.frame(x1 + 0.5, desplazamiento, -caida * 0.4 - 0.1), p2]
+        f = (x1 - 8 + 6) / (x1 + 6)                             # 8 m antes del loop, sobre el riel
+        grind_dash(tuple(a + (b - a) * f for a, b in zip(p0, p1)))
+    else:
+        puntos = [p0, p1, p2]
+    riel_grind(f"{nombre}@GR", puntos)
     grind_dash(tuple(a + (b - a) * 0.1 for a, b in zip(p0, p1)))
     suelo_muerte(4, largo - 5, ancho=40, profundidad=caida + 17)
     K.avanzar(largo - 2, -caida - 0.35)
@@ -868,16 +935,17 @@ def gimmicks_activos():
 def barra_acrobacia(adelante, lado=0.0, arriba=2.0):
     """JumpPole (barra de acrobacia, campos de ghz200): Sonic gira en ella y sale alto si salta en el momento justo.
     Solo funciona en 2D: los originales están en planos 2D (ssh200 x ≈ -641, ghz200 x = 2047,5) y en 3D no se cogía
-    (prueba de la 0.7.4). Usar dentro de barra_2d()."""
+    (prueba de la 0.7.4). Funciona en 2D (0.7.5), pero suelta en el aire es difícil de usar: va junto a una pared, como
+    salvavidas en los huecos de tramo_2d (0.7.7)."""
     return obj("JumpPole", "<AddMaxVelocity>0</AddMaxVelocity><AddMinVelocity>0</AddMinVelocity><GroundOffset>0</GroundOffset>"
                "<IsCastShadow>true</IsCastShadow><Range>30</Range>", adelante, lado, arriba, q=q_yaw())
 
 
 def barra_giro(adelante, arriba=3.0, largo=8.0, lado=0.0):
     """IronPole3D (barra horizontal de ssh200): se llega con homing, Sonic queda girando y sale con altura al pulsar
-    salto. Definida en #SonicActionCommon/#SystemCommon (común). El eje de la barra es el Z local (en cte200 la
-    IronPole2D tiene rotación identidad y cruza el plano 2D): con q_yaw(pi/2) queda cruzada a la pista. Centrada en la
-    pista: si Position fuera un extremo y no el centro, la barra seguiría pasando por el eje."""
+    salto (confirmado en la 0.7.6). Definida en #SonicActionCommon/#SystemCommon (común). El eje de la barra es el Z
+    local: con q_yaw(pi/2) queda cruzada a la pista. Position es UN EXTREMO y la barra crece PoleLen hacia -Z local, es
+    decir hacia la derecha de la pista (captura de la prueba de la 0.7.6): con lado = largo / 2 queda centrada."""
     return obj("IronPole3D", "<CameraEaseTimeEnter>0.6</CameraEaseTimeEnter><CameraEaseTimeKeep>0</CameraEaseTimeKeep>"
                "<CameraEaseTimeLeave>1.2</CameraEaseTimeLeave><CameraID><SetObjectID>0</SetObjectID></CameraID>"
                f"<GroundOffset>0</GroundOffset><GuideSide>1</GuideSide><IsCastShadow>true</IsCastShadow><PoleLen>{largo:g}</PoleLen>"

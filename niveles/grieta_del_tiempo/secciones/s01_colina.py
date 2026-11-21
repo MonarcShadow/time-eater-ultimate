@@ -31,6 +31,14 @@ def construir():
     t = carretera(30, ancho=14, mat="ghz")
     with en(t, 10):
         arco_costura(14)
+    # loop clásico de Green Hill (nuevo en 0.7.7): dos paneles para coger velocidad y una vuelta de radio 10 m
+    t = carretera(40, ancho=14, mat="ghz")
+    for s in (8, 24):
+        with en(t, s):
+            dash_panel(0)
+    anillos(30, 38, cada=2.0, tramo=t)
+    loop("s1_loop", radio=10, ancho=10, desplazamiento=14, mat="ghz")
+    carretera(20, ancho=14, mat="ghz")
 
     # colinas onduladas (nuevo en 0.7.0): Motoras de Green Hill y Landers de Chemical Plant entre las tuberías
     for k, dz in enumerate((6, -6, 5, -5)):

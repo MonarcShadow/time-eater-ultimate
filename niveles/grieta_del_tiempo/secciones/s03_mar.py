@@ -48,8 +48,8 @@ def construir():
     postes(t, 30)
     # barra de giro (IronPole3D, nuevo en 0.7.6): hueco de 18 m con la barra en el centro, 3 m por encima; el borde de
     # llegada está 4 m más alto. Homing a la barra, girar y salir con salto. Con GIMMICKS_NUEVOS = 0, hueco de 7 m.
-    if gimmicks_activos():
-        barra_giro(9, arriba=3.0, largo=8)
+    if gimmicks_activos():                                  # largo, altura y lado en ajustes.conf (BARRA_GIRO_*)
+        barra_giro(9, arriba=AJUSTES["BARRA_GIRO_ALTO"], largo=AJUSTES["BARRA_GIRO_LARGO"], lado=AJUSTES["BARRA_GIRO_LADO"])
         anillos(-4, 6, cada=2.5, arriba=1.5)
         suelo_muerte(0, 18, ancho=40, profundidad=15)
         K.avanzar(18, 4.0)

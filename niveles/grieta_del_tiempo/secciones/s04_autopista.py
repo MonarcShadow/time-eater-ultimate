@@ -51,7 +51,8 @@ def construir():
     ritmo("3d")
     t = carretera(30, ancho=16, mat="sph")
     # riel de la autopista: baja 10 m sobre las nubes
-    t = riel("s4_riel", 120, 10, plataforma_final=66, mat="ssz")    # 66 m: margen sin huecos antes del cambio a 2D
+    # 66 m: margen sin huecos antes del cambio a 2D. Loop vertical de radio 8 a mitad del riel (nuevo en 0.7.7)
+    t = riel("s4_riel", 120, 10, plataforma_final=66, mat="ssz", vuelta=8, desplazamiento=4)
     anillos(5, 30, cada=5, tramo=t)
     # letreros en 2D
     t = tramo_2d("s4_2d", (0, 1.5, 3.0, 1.5, 0, 1.5, 0), mats=("sph", "ssz"), mat_salida="ssz", enemigos="sph")

@@ -48,17 +48,21 @@ def construir():
     sumar_tiempo(24 / VEL["rapido"], 24)
     # segunda tanda de tejados (nuevo en 0.7.0), con Egg Fighters y GunHunters, y otro riel más largo
     tejados(4, primero=5, enemigos=True)
-    # barra de acrobacia (0.7.4; en 2D desde la 0.7.5, en 3D no se cogía): hueco de 16 m y el tejado siguiente 3 m
-    # más alto. Saltando en el momento justo desde la barra se llega; si no, se cae. Con GIMMICKS_NUEVOS = 0, el hueco
-    # normal de 7 m en 3D.
-    # con la barra en 2D: 12 m hasta el cambio de modo + 40 m de margen sin huecos (el homing se corta al cruzarlo)
-    carretera(54 if gimmicks_activos() else 20, ancho=14, mat="euc", muros=0.5, mat_muro="cte")
-    if gimmicks_activos():
-        barra_2d("s9_barra", hueco=16, subida=3, mat="euc", mat_llegada="ssz")
-    else:
-        suelo_muerte(0, 7, ancho=40, profundidad=18)
-        K.avanzar(7)
-        sumar_tiempo(7 / VEL["3d"], 7)
+    # espiral de anillos de light dash (0.7.7; antes una barra de acrobacia, difícil de usar suelta en el aire):
+    # hueco de 16 m y el tejado siguiente 10 m más alto. La hélice (radio 3 m, 2 vueltas alrededor del eje de avance)
+    # sube del borde de salida al de llegada; empieza y acaba a 1,2 m sobre cada tejado. Sin light dash no se llega.
+    carretera(20, ancho=14, mat="euc", muros=0.5, mat_muro="cte")
+    HUECO, SUBIDA, RADIO, VUELTAS = 16.0, 10.0, 3.0, 2
+    largo_helice = math.hypot(2 * math.pi * RADIO * VUELTAS, math.hypot(HUECO + 4, SUBIDA))
+    n_anillos = int(largo_helice / 1.5)
+    anillos(-6, -3, cada=1.5, arriba=1.2, dash=True)                          # arranque sobre el tejado
+    for k in range(n_anillos + 1):
+        f = k / n_anillos
+        a = 2 * math.pi * VUELTAS * f
+        obj("Ring", CAMPOS_RING_DASH, -2 + (HUECO + 4) * f, RADIO * math.sin(a), 1.2 + RADIO * (1 - math.cos(a)) + SUBIDA * f)
+    suelo_muerte(0, HUECO, ancho=40, profundidad=18)
+    K.avanzar(HUECO, SUBIDA)
+    sumar_tiempo(HUECO / VEL["3d"] + 2.0, HUECO)
     carretera(20, ancho=14, mat="ssz", muros=0.5, mat_muro="cte")
     carretera(10, ancho=14, mat="euc", muros=0)
     t = riel("s9_riel_b", 110, 10, plataforma_final=50, mat="ssz")

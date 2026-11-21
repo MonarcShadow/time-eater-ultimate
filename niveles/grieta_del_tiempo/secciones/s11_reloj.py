@@ -8,6 +8,40 @@ from base import *  # noqa: F401,F403
 GIRO_CAMARA_RELOJ = AJUSTES["GIRO_CAMARA_RELOJ"]
 
 
+def riel_secreto(centro, fondo_z, radio=24.0, paso=4.0):
+    """Riel semioculto (0.7.7): sale del borde izquierdo de la explanada de la boca (a 90° de la entrada), baja en
+    espiral por FUERA de la torre (radio 24 m; la explanada llega a 22 y las paredes a 15,5), da ~2 vueltas, se abre
+    hacia el túnel de salida y aterriza en la carretera de salida a ~46 m del centro, más allá del checkpoint del fondo:
+    más rápido, pero sin ese checkpoint. Un engranaje decorativo en el borde lo tapa a medias. No suma tiempo (atajo)."""
+    th = K.th                                            # rumbo de salida (el túnel está en esta dirección)
+    a0 = th + math.pi / 2                                # inicio: lado izquierdo de la boca
+    a_fin = th + math.pi / 4                             # fin de la espiral; después, curva de apertura hasta 'th'
+    giro = (a_fin - a0) - 2 * 2 * math.pi                # sentido horario, ~2 vueltas
+    plano = []                                           # (x, y) en planta
+    n = max(8, int(abs(giro) * radio / paso))
+    for k in range(n + 1):
+        a = a0 + giro * k / n
+        plano.append((centro[0] + radio * math.cos(a), centro[1] + radio * math.sin(a)))
+    for k in range(1, 9):                                # apertura: de tangente a radial, sin esquinas
+        u = k / 8
+        a = th + (math.pi / 4) * (1 - u) ** 2
+        r = radio + 8 * u * u
+        plano.append((centro[0] + r * math.cos(a), centro[1] + r * math.sin(a)))
+    for r in (36.0, 41.0, 46.0):                         # recta final sobre la carretera de salida
+        plano.append((centro[0] + r * math.cos(th), centro[1] + r * math.sin(th)))
+    largos = [0.0]
+    for p, q in zip(plano, plano[1:]):
+        largos.append(largos[-1] + math.hypot(q[0] - p[0], q[1] - p[1]))
+    z0, z1 = centro[2] + 0.35, fondo_z + 0.35
+    puntos = [(x, y, z0 + (z1 - z0) * s / largos[-1]) for (x, y), s in zip(plano, largos)]
+    puntos[-1] = (puntos[-1][0], puntos[-1][1], z1)
+    riel_grind("s11_riel_secreto@GR", puntos)
+    grind_dash(tuple(a + (b - a) * 0.3 for a, b in zip(puntos[0], puntos[1])))
+    # engranaje decorativo en el borde de la explanada, delante del inicio del riel
+    SOLO_VISUAL.disco((centro[0] + 22.5 * math.cos(a0 + 0.12), centro[1] + 22.5 * math.sin(a0 + 0.12), centro[2] + 3.0),
+                      3.0, (math.cos(a0 + 0.12 + math.pi / 2), math.sin(a0 + 0.12 + math.pi / 2), 0.0), "euc", n=10, grosor=0.6)
+
+
 def construir():
     seccion("11 Dentro del reloj")
     costura(16)
@@ -62,11 +96,13 @@ def construir():
     zona_planeo(centro, PROF, R_BOCA, GIRO_CAMARA_RELOJ)
     SOLIDO.caja((centro[0], centro[1], fondo_z - 2), (36, 36, 2), K.th, "euc")   # suelo del fondo
     MIN_Z[0] = min(MIN_Z[0], fondo_z - 2)
+    riel_secreto(centro, fondo_z)
 
     # salida por el túnel y vuelta al rumbo anterior (curva a la derecha)
     K.x, K.y = centro[0] + 17 * math.cos(K.th), centro[1] + 17 * math.sin(K.th)
     K.z = fondo_z
     registrar_eje(0.0)
+    punto_control(3)                     # checkpoint del fondo (0.7.7): quien baja por el riel secreto se lo salta
     t = carretera(60, ancho=14, mat="sph", muros=1.0)
     with en(t, 40):
         enemigo("sph", 0, 0)
