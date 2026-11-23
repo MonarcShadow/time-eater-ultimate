@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.16
+Grieta del Tiempo:
+- **Loop (sección 1):** el radio pasa de 15 a 30 m. Una pared invisible entre el carril de entrada y el de salida impide saltar de uno a otro sin dar la vuelta. Se ajusta con `LOOP_RADIO` y `LOOP_MURO_ALTO`.
+- **Tramos 2D:** la franja en la que Sonic queda fijado al 2D (la separación de los dos rieles de la ruta `@SV`) medía 2 m. Ahora mide lo mismo que la carretera de entrada (14 a 20 m), igual que las plataformas, así que el 2D fija la profundidad aunque se entre por un borde.
+  - En la torre de la sección 5, los escalones miden 20 m, con una fila de resortes a lo ancho.
+  - El activador del 2D cubre siempre todo el camino.
+
 ## 0.7.15
 Grieta del Tiempo:
 - **Desafío aéreo (sección 9):** el tercer Spinner está 3 m más bajo, así que el rebote del homing deja a Sonic a la altura de la fila de light dash. La distancia se ajusta con `LIGHT_DASH_REBOTE`.

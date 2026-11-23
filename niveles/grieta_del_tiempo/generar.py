@@ -30,7 +30,7 @@ escena.unit_settings.scale_length = 1.0
 escena.unit_settings.length_unit = "METERS"
 
 import base  # noqa: E402
-from base import (CURVAS, K, MIN_Z, MUERTE, DANO, OBJETOS, QUICKSTEPS, SOLIDO, SOLO_VISUAL, Malla,  # noqa: E402
+from base import (CURVAS, K, MIN_Z, MUERTE, DANO, INVISIBLE, OBJETOS, QUICKSTEPS, SOLIDO, SOLO_VISUAL, Malla,  # noqa: E402
                   a_juego, xyz)
 
 base.crear_materiales(salida)
@@ -84,6 +84,7 @@ ob_rieles = SOLO_VISUAL.objeto("teu_rieles", col_nivel)
 ob_col = SOLIDO.objeto("teu_camino_col@ROCK", col_col)
 ob_muerte = MUERTE.objeto("teu_muerte_col@DEAD", col_col)
 ob_dano = DANO.objeto("teu_lava_col@DAMAGE", col_col)
+ob_invisible = INVISIBLE.objeto("teu_invisible_col@ROCK", col_col)   # paredes invisibles (0.7.16)
 # agua para correr encima (tags propios que añade construir_nivel.ps1; ver base.AGUA)
 obs_agua = [base.AGUA[v].objeto(f"teu_agua_{v.lower()}_col@{tag}", col_col)
             for v, tag in base.TAGS_AGUA.items() if base.AGUA[v].f]
@@ -143,7 +144,7 @@ dead = math.floor(MIN_Z[0] - 40)
 # Mundo de Havok: si Sonic o los objetos salen de él, la física se detiene (anillos, paneles y checkpoints dejan de
 # funcionar: el "Ghost Mode" que describe el Unleashed Project; nos pasó en la 0.7.0 a ~4 km del origen).
 # Se declara como en el Stage.stg.xml del Time Eater (#blb: ±5000), cubriendo todo el nivel con margen.
-pts_j = [a_juego(v) for m in (SOLIDO, SOLO_VISUAL, MUERTE) for v in m.v]
+pts_j = [a_juego(v) for m in (SOLIDO, SOLO_VISUAL, MUERTE, INVISIBLE) for v in m.v]
 for linea in OBJETOS:
     mpos = re.search(r"<Position><x>([^<]*)</x><y>([^<]*)</y><z>([^<]*)</z></Position>", linea)
     if mpos:

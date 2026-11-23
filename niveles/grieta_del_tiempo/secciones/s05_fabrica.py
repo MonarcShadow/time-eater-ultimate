@@ -19,7 +19,7 @@ def construir():
     t = carretera(30, ancho=20, mat="euc", muros=0)                # suelo de entrada a la torre
 
     # torre (probada en el juego): escalera hacia adelante en 2D con resortes
-    plataforma(0, 0, 0, 34, 10, alto=2, mat="euc")                # suelo de la torre bajo la escalera (si caes, vuelves al resorte)
+    plataforma(0, 0, 0, 34, 20, alto=2, mat="euc")                # suelo de la torre bajo la escalera (si caes, vuelves al resorte)
     # paredes de la torre. La del lado de la cámara 2D (lado −) va más allá de la cámara (0.7.13: a −12 tapaba la
     # subida con CAMARA_2D_DISTANCIA = 20), con una losa de suelo hasta ella para no caer antes del cambio a 2D
     lado_cam = -(AJUSTES["CAMARA_2D_DISTANCIA"] + 4)
@@ -34,18 +34,23 @@ def construir():
         lados = (lado_cam + 1.3, 10.7) if ad < 0 else (10.7,)              # engranajes del reloj / de la fábrica en las paredes
         for lado in lados:
             SOLO_VISUAL.disco(K.frame(ad + (3 if lado > 0 else 0), lado, alt), radio, izq, mat_e, n=12, grosor=0.5)
-    a_2d(-8)
-    curva_recta("s5_2d@SV", -12, 50, rieles=(-1.0, 1.0))
-    resorte_vertical(-4, 0, 0, velocidad=26)
+    # 0.7.16: la franja 2D (rieles @SV) y los escalones miden 20 m, lo que el suelo de entrada: con rieles a ±1 m,
+    # entrando por un lado la cámara pasaba a 2D pero Sonic seguía moviéndose en 3D. Resortes en fila a lo ancho.
+    a_2d(-8, ancho_camino=20)
+    curva_recta("s5_2d@SV", -12, 50, rieles=(-10.0, 10.0))
+    FILA = (-8, -4, 0, 4, 8)
+    for lado in FILA:
+        resorte_vertical(-4, lado, 0, velocidad=26)
     escalones = [(0, 6, 8), (6, 12, 8), (12, 18, 8), (18, 24, 14)]           # (inicio, altura, largo)
     for i, (ini, h, largo) in enumerate(escalones):
-        plataforma(ini, 0, h, largo, 6, alto=1.2, mat="pla" if i % 2 == 0 else "cpz")
+        plataforma(ini, 0, h, largo, 20, alto=1.2, mat="pla" if i % 2 == 0 else "cpz")
         anillos(ini + 1, ini + largo - 1, cada=2.0, arriba=h + 1.0)
         if i < len(escalones) - 1:
             ultimo = i == len(escalones) - 2
-            resorte_vertical(ini + 2, 0, h, velocidad=32 if ultimo else 26, mantener=7 if ultimo else 5)
+            for lado in FILA:
+                resorte_vertical(ini + 2, lado, h, velocidad=32 if ultimo else 26, mantener=7 if ultimo else 5)
     decorado(26, 0, 31, (6, 6, 1.5), "pla")                                   # "prensa" de Planet Wisp sobre la salida
-    a_2d(40, salida=True, arriba=24)                                          # salida a 3D ya en la carretera de arriba
+    a_2d(40, salida=True, arriba=24, ancho_camino=20)                                          # salida a 3D ya en la carretera de arriba
     K.avanzar(32)
     K.z += 24
     sumar_tiempo(10, 60)                                                      # la subida en 2D
