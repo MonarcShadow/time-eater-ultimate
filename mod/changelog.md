@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0
+Grieta del Tiempo:
+- **Texturas originales:** cada zona usa texturas de su propio escenario.
+  - Pasto a cuadros y roca de Green Hill, rejillas y paneles de Chemical Plant, piedra de Sky Sanctuary, asfalto y edificios con ventanas de Speed Highway, calles y ladrillo de City Escape, piedra de Seaside Hill, asfalto roto de Crisis City, adoquines de Rooftop Run y máquinas de Planet Wisp.
+  - El suelo y las paredes llevan una textura distinta cada uno.
+- **Grietas moradas (propias):** alrededor de 1 de cada 5 trozos de suelo tiene grietas moradas brillantes del Time Eater.
+- Las texturas se sacan de los archivos del juego al construir (`scripts/extraer_texturas.ps1`). No están en el repositorio, solo dentro del mod.
+
 ## 0.7.17
 Grieta del Tiempo:
 - **Loop (sección 1):** la pared invisible pasa de 12 a 25 m (`LOOP_MURO_ALTO`, como mucho 0,85 × radio), así que ya no se puede saltar por encima subiendo despacio sin el panel.

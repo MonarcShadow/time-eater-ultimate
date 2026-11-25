@@ -37,6 +37,9 @@ New-Item -ItemType Directory -Force -Path $build | Out-Null
 
 # 1. Blender ---------------------------------------------------------------------------------
 Paso "1. Blender: escena y exportación"
+# texturas originales que pida el nivel (texturas.json, 0.8.0): se extraen del juego a build	exturas_originales
+& (Join-Path $PSScriptRoot "extraer_texturas.ps1") -Nivel $Nivel
+$env:TEU_TEXTURAS = Join-Path $raiz "build\texturas_originales\tex"
 $bcfg = Join-Path $herr "blender-config"
 $env:TEU_HERRAMIENTAS = $herr
 $env:BLENDER_USER_RESOURCES = $bcfg; $env:BLENDER_USER_CONFIG = "$bcfg\config"; $env:BLENDER_USER_SCRIPTS = "$bcfg\scripts"

@@ -4,6 +4,7 @@
 #
 # Ejes: Blender X/Y = plano horizontal, Z = arriba. Juego: (x, y, z) = (bx, bz, -by).
 # Rumbo θ (Blender, desde +X hacia +Y). Yaw del juego φ = 90° + θ (comprobado: yaw 90 = avanzar hacia +X).
+import json
 import math
 import os
 import re
@@ -103,20 +104,93 @@ COLORES = {
     "costura": ((0.55, 0.05, 0.85), (0.95, 0.40, 1.00)),   # tejido del Time Eater
     "blanco":  ((0.97, 0.97, 0.97), (0.85, 0.85, 0.88)),   # White Space / color comido
 }
-ORDEN_MATS = list(COLORES)
+# 0.8.0: texturas originales del juego (texturas.json; las extrae scripts/extraer_texturas.ps1 a TEU_TEXTURAS). Cada
+# material con textura tiene tres variantes: suelo (caras horizontales), "_pared" (caras verticales) y "_grieta" (suelo
+# con grietas moradas propias, en GRIETA_PORCENTAJE % de las caras de suelo). Sin los originales, cuadriculados propios.
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "texturas.json"), encoding="utf-8") as _f:
+    TEXTURAS = json.load(_f)["materiales"]
+GRIETA_PORCENTAJE = 18
+ORDEN_MATS = list(COLORES) + [f"{m}_{v}" for m in TEXTURAS for v in ("pared", "grieta")]
 MATS = {}
 ZONAS = ("ghz", "cpz", "ssz", "sph", "cte", "ssh", "csc", "euc", "pla")
 
 
+def _cuadriculado(ca, cb, n=128):
+    import numpy as np
+    y, x = np.mgrid[0:n, 0:n]
+    par = (((x // (n // 8)) + (y // (n // 8))) % 2).astype(bool)
+    pix = np.ones((n, n, 4), dtype=np.float32)
+    pix[..., :3] = np.where(par[..., None], np.array(ca, dtype=np.float32), np.array(cb, dtype=np.float32))
+    return pix
+
+
+def _grietas(pix, semilla):
+    """Grietas moradas propias sobre una textura (0.8.0): ramas que avanzan quebradas, con un núcleo morado brillante y
+    un halo que tiñe el fondo (como el tejido del Time Eater). Se repiten sin cortes (todo en módulo n)."""
+    import numpy as np
+    rng = np.random.default_rng(semilla)
+    n = pix.shape[0]
+    esc = n / 512
+    halo = np.zeros((n, n), dtype=np.float32)
+    nucleo = np.zeros((n, n), dtype=np.float32)
+    ramas = [(float(rng.uniform(0, n)), float(rng.uniform(0, n)), float(rng.uniform(0, 2 * math.pi)), 3.0 * esc + 1)
+             for _ in range(2)]
+    total = len(ramas)
+    while ramas:
+        x, y, ang, grosor = ramas.pop()
+        for _ in range(int(n * 0.35)):
+            ang += float(rng.normal(0, 0.3))
+            x, y = (x + math.cos(ang) * 2) % n, (y + math.sin(ang) * 2) % n
+            r = int(grosor * 3)
+            for dy in range(-r, r + 1):
+                for dx in range(-r, r + 1):
+                    d = math.hypot(dx, dy)
+                    yy, xx = int(y + dy) % n, int(x + dx) % n
+                    halo[yy, xx] = max(halo[yy, xx], 1 - d / (r + 0.5))
+                    if d <= grosor * 0.6:
+                        nucleo[yy, xx] = 1.0
+            if grosor > 1.2 and total < 7 and rng.random() < 0.02:
+                total += 1
+                ramas.append((x, y, ang + float(rng.choice((-1, 1))) * float(rng.uniform(0.6, 1.2)), grosor * 0.65))
+            if rng.random() < 0.004:
+                break
+    morado = np.array((0.55, 0.05, 0.85), dtype=np.float32)
+    brillo = np.array((0.95, 0.55, 1.0), dtype=np.float32)
+    out = pix.copy()
+    out[..., :3] = out[..., :3] * (1 - 0.65 * halo[..., None]) + morado * 0.65 * halo[..., None]
+    out[..., :3] = np.where(nucleo[..., None] > 0, brillo, out[..., :3])
+    return out
+
+
 def crear_materiales(salida):
-    for nombre, (ca, cb) in COLORES.items():
-        img = bpy.data.images.new(f"teu_{nombre}_dif", 128, 128)
-        pix = []
-        for y in range(128):
-            for x in range(128):
-                r, g, b = ca if ((x // 16) + (y // 16)) % 2 else cb
-                pix += [r, g, b, 1.0]
-        img.pixels = pix
+    import numpy as np
+    carpeta_tex = os.environ.get("TEU_TEXTURAS", "")
+    usadas = 0
+    for nombre in ORDEN_MATS:
+        base_m, _, variante = nombre.partition("_")
+        if base_m not in COLORES or nombre in COLORES:
+            base_m, variante = nombre, ""
+        pix = None
+        cfg = TEXTURAS.get(base_m)
+        if cfg and carpeta_tex:
+            ref = cfg["pared" if variante == "pared" else "suelo"].split("/")[1]
+            ruta = os.path.join(carpeta_tex, ref + ".png")
+            if os.path.exists(ruta):
+                src = bpy.data.images.load(ruta)
+                pix = np.array(src.pixels[:], dtype=np.float32).reshape(src.size[1], src.size[0], 4)
+                pix[..., 3] = 1.0
+                bpy.data.images.remove(src)
+                usadas += 1
+        if pix is None:
+            ca, cb = COLORES[base_m]
+            if variante == "pared":
+                ca, cb = tuple(c * 0.8 for c in ca), tuple(c * 0.8 for c in cb)
+            pix = _cuadriculado(ca, cb)
+        if variante == "grieta":
+            pix = _grietas(pix, sum(map(ord, base_m)))
+        alto, ancho_px = pix.shape[:2]
+        img = bpy.data.images.new(f"teu_{nombre}_dif", ancho_px, alto)
+        img.pixels = pix.ravel()
         img.filepath_raw = os.path.join(salida, f"teu_{nombre}_dif.png")
         img.file_format = "PNG"
         img.save()
@@ -148,8 +222,49 @@ class Malla:
         i = len(self.v)
         self.v += pts
         self.f.append(tuple(range(i, i + len(pts))))
+        mat, uvs = self._material_y_uv(pts, mat, uvs)
         self.mat.append(ORDEN_MATS.index(mat))
-        self.uv.append(uvs or [(0, 0), (1, 0), (1, 1), (0, 1)][:len(pts)])
+        self.uv.append(uvs)
+
+    @staticmethod
+    def _material_y_uv(pts, mat, uvs):
+        """0.8.0: con textura original, las caras verticales usan la variante "_pared" y algunas de suelo la "_grieta"
+        (elegidas por la posición: siempre las mismas). UV: las dadas (en unidades de 4 m) se escalan a los metros por
+        repetición de la textura; sin UV, proyección plana en el plano de la cara (horizontal a lo largo y vertical
+        hacia arriba en las paredes), desplazada cerca de 0 (los UV de media precisión pierden detalle lejos de 0)."""
+        nx = ny = nz = 0.0
+        for a, b in zip(pts, pts[1:] + pts[:1]):           # normal de Newell
+            nx += (a[1] - b[1]) * (a[2] + b[2])
+            ny += (a[2] - b[2]) * (a[0] + b[0])
+            nz += (a[0] - b[0]) * (a[1] + b[1])
+        ln = math.sqrt(nx * nx + ny * ny + nz * nz) or 1.0
+        nx, ny, nz = nx / ln, ny / ln, nz / ln
+        cfg = TEXTURAS.get(mat)
+        metros = cfg["metros"] if cfg else 4.0
+        if cfg:
+            if abs(nz) < 0.55:
+                mat = mat + "_pared"
+            else:
+                c = [sum(p[k] for p in pts) / len(pts) for k in range(3)]
+                h = ((int(math.floor(c[0] / 4)) * 73856093) ^ (int(math.floor(c[1] / 4)) * 19349663)
+                     ^ (int(math.floor(c[2])) * 83492791))
+                if h % 100 < GRIETA_PORCENTAJE:
+                    mat = mat + "_grieta"
+        if uvs:
+            f = 4.0 / metros
+            return mat, [(u * f, v * f) for u, v in uvs]
+        if abs(nz) < 0.9:                                   # e1 horizontal dentro del plano, e2 hacia arriba
+            e1 = (-ny, nx, 0.0)
+        else:
+            e1 = tuple(pts[1][k] - pts[0][k] for k in range(3))
+        l1 = math.sqrt(sum(c * c for c in e1)) or 1.0
+        e1 = tuple(c / l1 for c in e1)
+        e2 = (ny * e1[2] - nz * e1[1], nz * e1[0] - nx * e1[2], nx * e1[1] - ny * e1[0])
+        if abs(nz) < 0.9 and e2[2] < 0:
+            e2 = tuple(-c for c in e2)
+        uv = [(sum(p[k] * e1[k] for k in range(3)) / metros, sum(p[k] * e2[k] for k in range(3)) / metros) for p in pts]
+        u0, v0 = math.floor(min(u for u, _ in uv)), math.floor(min(v for _, v in uv))
+        return mat, [(u - u0, v - v0) for u, v in uv]
 
     def quad(self, a, b, c, d, mat, uvs=None):
         self.cara([a, b, c, d], mat, uvs)
@@ -202,7 +317,7 @@ class Malla:
         caras = [(0, 2, 3, 1), (4, 5, 7, 6), (0, 1, 5, 4), (1, 3, 7, 5), (3, 2, 6, 7), (2, 0, 4, 6)]
         for cara in caras:
             pts = [P[k] for k in cara]
-            self.quad(*pts, mat, [(0, 0), (L / 4, 0), (L / 4, H / 4 + W / 4), (0, H / 4 + W / 4)])
+            self.quad(*pts, mat)                     # UV planas por cara (0.8.0)
 
     def objeto(self, nombre, col):
         me = bpy.data.meshes.new(nombre)

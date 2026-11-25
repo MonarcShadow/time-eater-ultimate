@@ -1,0 +1,22 @@
+{
+  "_comentario": "0.8.0: texturas originales por material. 'suelo' va en las caras que miran hacia arriba (o abajo), 'pared' en las verticales; 'metros' = metros por repetición. La variante con grietas moradas se genera sobre el suelo. Sin los originales (archivos originales/), el nivel usa los cuadriculados propios. Las elegí con la hoja de contacto de build/texturas_originales/hoja.png.",
+  "archivos": {
+    "ghz200": "bb/Packed/ghz200/ghz200.ar.00", "cpz200": "bb/Packed/cpz200/cpz200.ar.00",
+    "ssz200": "bb/Packed/ssz200/ssz200.ar.00", "sph200": "bb/Packed/sph200/sph200.ar.00",
+    "cte200": "bb/Packed/cte200/cte200.ar.00", "ssh200": "bb2/Packed/ssh200/ssh200.ar.00",
+    "csc200": "bb2/Packed/csc200/csc200.ar.00", "euc200": "bb2/Packed/euc200/euc200.ar.00",
+    "pla200": "bb2/Packed/pla200/pla200.ar.00"
+  },
+  "materiales": {
+    "gris": {"suelo": "sph200/sph_wall_tn1_concrete_dif", "pared": "cpz200/cpz_metal_yy1_wall01_dif", "metros": 6},
+    "ghz":  {"suelo": "ghz200/ghz_ground_sk1_earth03_dif", "pared": "ghz200/ghz_rock_sk1_wall01_dif", "metros": 8},
+    "cpz":  {"suelo": "cpz200/cpz_metal_st1_floor01_dif", "pared": "cpz200/cpz_metal_yy1_wall01_dif", "metros": 4},
+    "ssz":  {"suelo": "ssz200/ssz_rock_km1_wall01_dif", "pared": "ssz200/ssz_rock_km1_relief01_dif", "metros": 6},
+    "sph":  {"suelo": "sph200/sph_ground_tn1_asphaltA_dif", "pared": "sph200/sph_wall_tn1_window01_dif", "metros": 8},
+    "cte":  {"suelo": "cte200/cte_ground_kd1_roada1_dif", "pared": "cte200/cte_wall_ay1_brick01_dif", "metros": 6},
+    "ssh":  {"suelo": "ssh200/ssh_rock_ay2_road01_dif", "pared": "ssh200/ssh_rock_in1_floor01_dif", "metros": 6},
+    "csc":  {"suelo": "csc200/csc_ground_tk1_road01br_dif", "pared": "csc200/csc_wall_fy1_debris03_dif", "metros": 8},
+    "euc":  {"suelo": "euc200/euc_wall_yy_road02_dif", "pared": "euc200/euc_wall_yy_wall03_dif", "metros": 5},
+    "pla":  {"suelo": "pla200/pla_metal_ay1_mecha03_dif", "pared": "pla200/pla_metal_my1_mecha01_dif", "metros": 5}
+  }
+}
