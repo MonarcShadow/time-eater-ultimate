@@ -68,8 +68,24 @@ def construir():
     # 0.7.15: el tercero, LIGHT_DASH_REBOTE m (4) bajo el primer anillo (+14): con el rebote del homing Sonic sube
     # unos 3 m y queda a la altura de la fila (a 1 m pasaba por encima)
     enemigo("sph", x3, 0, arriba=14.0 - AJUSTES["LIGHT_DASH_REBOTE"])
+    # 0.7.17: con LIGHT_DASH_HUECO 250 la S de ±2 m era una recta. Ahora es una espiral (hélice alrededor del eje de
+    # avance) de radio LIGHT_DASH_ESPIRAL_RADIO: empieza en lo alto de la vuelta (14 m, sobre el tercer Spinner) y
+    # acaba en lo alto, 1 m más abajo, antes del aro. El paso sale del giro máximo: la curvatura de una hélice es
+    # R / (R² + c²), con c = paso / 2π, y entre dos anillos (a LIGHT_DASH_SEPARACION) gira curvatura × separación;
+    # se deja un 15 % de margen bajo LIGHT_DASH_GIRO_MAX. Si no caben 2 vueltas, el hueco se alarga.
+    R = AJUSTES["LIGHT_DASH_ESPIRAL_RADIO"]
+    k_max = math.radians(0.85 * AJUSTES["LIGHT_DASH_GIRO_MAX"]) / AJUSTES["LIGHT_DASH_SEPARACION"]
+    paso_min = 2 * math.pi * math.sqrt(max(0.0, R / k_max - R * R))
+    if HUECO - 2.0 - x3 < 2 * paso_min:
+        HUECO = x3 + 2.0 + 2 * paso_min
     largo_fila = HUECO - 2.0 - x3
-    fila_light_dash([(x3 + largo_fila * k / 8, 2.0 * math.sin(2 * math.pi * k / 8), 14.0 - k / 8) for k in range(9)])
+    vueltas = max(2, int(largo_fila / paso_min)) if paso_min > 0 else 2
+    n_ctl = max(8, int(largo_fila / 2.0))
+    def helice(u):
+        fase = 2 * math.pi * vueltas * u
+        return (x3 + largo_fila * u, R * math.sin(fase), 14.0 - u - R + R * math.cos(fase))
+    fila_light_dash([helice(k / n_ctl) for k in range(n_ctl + 1)],
+                    fantasmas=(helice(-1 / n_ctl), helice(1 + 1 / n_ctl)))
     aro_impulso_inclinado(HUECO - 0.5, 0, 12.0, velocidad=30, bajada_grados=40)
     suelo_muerte(0, HUECO, ancho=40, profundidad=18)
     K.avanzar(HUECO, SUBIDA)

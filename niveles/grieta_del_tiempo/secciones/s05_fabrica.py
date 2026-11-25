@@ -16,10 +16,12 @@ def construir():
             decorado(0, -12, 0, (6, 4, 10), "pla")                  # máquinas a un lado
             decorado(0, 0, 14, (4, 18, 1.2), "euc")                 # vigas del techo
     anillos(10, 140, cada=6, tramo=t)
-    t = carretera(30, ancho=20, mat="euc", muros=0)                # suelo de entrada a la torre
+    # suelo de entrada a la torre: embudo de 18 a 6 m (0.7.17) para llegar centrado a los escalones de 6 m. Paredes de
+    # 2,5 m: el cambio a 2D va 8 m antes del final y, con CAMARA_2D_DISTANCIA 20, unas de 4 m taparían a Sonic
+    carretera(30, ancho=18, ancho_final=6, mat="euc", muros=2.5, muro_solido=True)
 
     # torre (probada en el juego): escalera hacia adelante en 2D con resortes
-    plataforma(0, 0, 0, 34, 20, alto=2, mat="euc")                # suelo de la torre bajo la escalera (si caes, vuelves al resorte)
+    plataforma(0, 0, 0, 34, 10, alto=2, mat="euc")                # suelo de la torre bajo la escalera (si caes, vuelves al resorte)
     # paredes de la torre. La del lado de la cámara 2D (lado −) va más allá de la cámara (0.7.13: a −12 tapaba la
     # subida con CAMARA_2D_DISTANCIA = 20), con una losa de suelo hasta ella para no caer antes del cambio a 2D
     lado_cam = -(AJUSTES["CAMARA_2D_DISTANCIA"] + 4)
@@ -34,16 +36,17 @@ def construir():
         lados = (lado_cam + 1.3, 10.7) if ad < 0 else (10.7,)              # engranajes del reloj / de la fábrica en las paredes
         for lado in lados:
             SOLO_VISUAL.disco(K.frame(ad + (3 if lado > 0 else 0), lado, alt), radio, izq, mat_e, n=12, grosor=0.5)
-    # 0.7.16: la franja 2D (rieles @SV) y los escalones miden 20 m, lo que el suelo de entrada: con rieles a ±1 m,
-    # entrando por un lado la cámara pasaba a 2D pero Sonic seguía moviéndose en 3D. Resortes en fila a lo ancho.
+    # 0.7.16: la franja 2D (rieles @SV) mide 20 m: con rieles a ±1 m, entrando por un lado la cámara pasaba a 2D pero
+    # Sonic seguía moviéndose en 3D. 0.7.17: escalones de nuevo de 6 m (a 20 se veían raros), con el embudo delante y
+    # una fila de 3 resortes a lo ancho.
     a_2d(-8, ancho_camino=20)
     curva_recta("s5_2d@SV", -12, 50, rieles=(-10.0, 10.0))
-    FILA = (-8, -4, 0, 4, 8)
+    FILA = (-2, 0, 2)
     for lado in FILA:
         resorte_vertical(-4, lado, 0, velocidad=26)
     escalones = [(0, 6, 8), (6, 12, 8), (12, 18, 8), (18, 24, 14)]           # (inicio, altura, largo)
     for i, (ini, h, largo) in enumerate(escalones):
-        plataforma(ini, 0, h, largo, 20, alto=1.2, mat="pla" if i % 2 == 0 else "cpz")
+        plataforma(ini, 0, h, largo, 6, alto=1.2, mat="pla" if i % 2 == 0 else "cpz")
         anillos(ini + 1, ini + largo - 1, cada=2.0, arriba=h + 1.0)
         if i < len(escalones) - 1:
             ultimo = i == len(escalones) - 2

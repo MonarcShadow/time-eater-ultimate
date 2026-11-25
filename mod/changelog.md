@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.17
+Grieta del Tiempo:
+- **Loop (sección 1):** la pared invisible pasa de 12 a 25 m (`LOOP_MURO_ALTO`, como mucho 0,85 × radio), así que ya no se puede saltar por encima subiendo despacio sin el panel.
+- **Cámara del loop:** se aleja en proporción al radio (74 m con radio 30) y su volumen cubre el loop entero. Antes se acababa a mitad de la subida y la cámara saltaba de golpe detrás de Sonic.
+- **Tramos 2D:** las plataformas vuelven a su ancho anterior (6 m; la barra y el pozo 8; la salida 14; los escalones de la torre 6, con una fila de 3 resortes).
+  - El activador y la franja del 2D siguen midiendo lo que la carretera.
+  - Antes de cada 2D hay un embudo de 30 m con paredes, como el de la sección 1, para llegar centrado.
+- **Sección 2:** la rampa hacia la isla tiene un 5 % más de fuerza (llegaba justo al borde).
+- **Desafío aéreo (sección 9):** la fila de light dash es ahora una espiral que gira como mucho ~5° entre anillos. Su radio se ajusta con `LIGHT_DASH_ESPIRAL_RADIO`, y si el hueco no da para 2 vueltas se alarga.
+
 ## 0.7.16
 Grieta del Tiempo:
 - **Loop (sección 1):** el radio pasa de 15 a 30 m. Una pared invisible entre el carril de entrada y el de salida impide saltar de uno a otro sin dar la vuelta. Se ajusta con `LOOP_RADIO` y `LOOP_MURO_ALTO`.

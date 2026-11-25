@@ -70,4 +70,4 @@ def construir():
     # tramo 2D: plataformas sobre tuberías y Mega Mack (el Egg Fighter de la salida se quitó: estaba dentro del margen;
     # la sección 2 ya empieza con uno)
     tramo_2d("s1_2d", (0, 1.5, 3.0, 1.0, 2.5, 0, 1.5, 3.0, 1.5, 0), mats=("ghz", "cpz"), tubos="cpz", mat_salida="ghz",
-             enemigos="ghz", cambio=-1.0, ancho_salida=14)            # 6 m: el ancho del final del embudo
+             enemigos="ghz", cambio=-1.0)            # franja de 6 m: el ancho del final del embudo

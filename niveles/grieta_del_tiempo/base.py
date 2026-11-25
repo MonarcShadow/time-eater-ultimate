@@ -56,6 +56,7 @@ AJUSTES_POR_DEFECTO = {
     "LIGHT_DASH_GIRO_MAX": 6.0,    # grados máximos de giro entre dos anillos seguidos (pla204: 5,9)
     "LIGHT_DASH_HUECO": 50.0,      # m del hueco del desafío aéreo de la sección 9 (con 24 se cruzaba con air boost)
     "LIGHT_DASH_REBOTE": 4.0,      # m del primer anillo de la sección 9 sobre el tercer Spinner (rebote del homing)
+    "LIGHT_DASH_ESPIRAL_RADIO": 4.0,  # m de radio de la espiral de light dash de la sección 9 (0.7.17)
 }
 
 
@@ -617,12 +618,19 @@ def anillos(desde, hasta, cada=2.5, lado=0.0, arriba=0.8, tramo=None, dash=False
         d += cada
 
 
-def fila_light_dash(control):
+def fila_light_dash(control, fantasmas=None):
     """Fila curva de anillos de light dash (0.7.10), con las medidas de Planet Wisp (pla204): 'control' son puntos
     (adelante, lado, arriba) del cursor; se interpola una curva Catmull-Rom y se remuestrea a LIGHT_DASH_SEPARACION.
-    Avisa si dos anillos seguidos giran más de LIGHT_DASH_GIRO_MAX (con giros mayores Sonic sale recto)."""
+    Avisa si dos anillos seguidos giran más de LIGHT_DASH_GIRO_MAX (con giros mayores Sonic sale recto).
+    fantasmas (0.7.17): (antes, después), puntos de control fuera de la fila que solo marcan la tangente de los extremos;
+    sin ellos, los extremos se prolongan en línea recta."""
     ctl = [K.frame(*c) for c in control]
-    ext = [ctl[0]] + ctl + [ctl[-1]]
+    # extremos prolongados en línea recta (0.7.17): duplicados, la curva se doblaba de golpe en el primer y el último anillo
+    if fantasmas:
+        ext = [K.frame(*fantasmas[0])] + ctl + [K.frame(*fantasmas[1])]
+    else:
+        ext = ([tuple(2 * a - b for a, b in zip(ctl[0], ctl[1]))] + ctl
+               + [tuple(2 * a - b for a, b in zip(ctl[-1], ctl[-2]))])
     densos = []
     for i in range(1, len(ext) - 2):
         p0, p1, p2, p3 = ext[i - 1], ext[i], ext[i + 1], ext[i + 2]
@@ -632,12 +640,15 @@ def fila_light_dash(control):
                                        + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t ** 3) for j in range(3)))
     densos.append(ctl[-1])
     sep = AJUSTES["LIGHT_DASH_SEPARACION"]
-    puntos, acum = [densos[0]], 0.0
+    puntos, acum = [densos[0]], 0.0                 # remuestreo exacto por longitud de arco (0.7.17)
     for a, b in zip(densos, densos[1:]):
-        acum += math.dist(a, b)
-        if acum >= sep:
-            puntos.append(b)
-            acum = 0.0
+        tramo = math.dist(a, b)
+        while acum + tramo >= sep and tramo > 1e-9:
+            f = (sep - acum) / tramo
+            a = tuple(a[j] + (b[j] - a[j]) * f for j in range(3))
+            puntos.append(a)
+            tramo, acum = math.dist(a, b), 0.0
+        acum += tramo
     giro_max = 0.0
     for a, b, c in zip(puntos, puntos[1:], puntos[2:]):
         u = [b[j] - a[j] for j in range(3)]
@@ -674,7 +685,8 @@ def resorte_vertical(adelante, lado=0.0, arriba=0.0, velocidad=30, a_3d=False, m
 
 def rampa_salto(adelante, lado=0.0, boost=50, normal=35, angulo=0):
     """JumpBoard. angulo = AngleType del juego: 0 = rampa tendida, 1 = rampa empinada.
-    Calibrado en el juego: hueco de 28 m -> 60/60 ángulo 0; hueco de 22 m (a una isla) -> 68/62 ángulo 1."""
+    Calibrado en el juego: hueco de 28 m -> 60/60 ángulo 0; hueco de 22 m (a una isla) -> 68/62 ángulo 1 llegaba justo
+    al borde, 71,4/65,1 desde la 0.7.17."""
     obj("JumpBoard", f"<AngleType>{angulo}</AngleType><GroundOffset>0</GroundOffset>"
         f"<ImpulseSpeedOnBoost>{boost}</ImpulseSpeedOnBoost><ImpulseSpeedOnNormal>{normal}</ImpulseSpeedOnNormal>"
         "<IsCastShadow>false</IsCastShadow><IsTo3D>false</IsTo3D><LookBack>false</LookBack><OutOfControl>1.5</OutOfControl>"
@@ -869,8 +881,21 @@ def riel_grind(nombre, puntos):
 # ----------------------------------------------------------------------------------------------
 # Patrones de recorrido reutilizables
 # ----------------------------------------------------------------------------------------------
-def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, ancho=None, tubos=None,
-             resortes=(), ancho_salida=None, mat_salida="gris", enemigos=None, cambio=-12.0, cambio_ghz=False):
+def embudo_2d(ancho_terreno, mat):
+    """0.7.17: franja ancha + terreno estrecho + embudo 3D. Devuelve (franja, embudo_hecho). La franja (rieles @SV y
+    activador) mide lo que la carretera anterior (0.7.16: con ±1 m, entrando por un borde la cámara pasaba a 2D y Sonic
+    seguía en 3D). El terreno 2D vuelve a su ancho (6-8 m; ancho se veía raro, prueba de la 0.7.16) y, para que Sonic
+    llegue centrado, un embudo 3D de 30 m con paredes sólidas de 4 m lleva del ancho de la carretera al del terreno,
+    como en la sección 1 (probado). El cambio a 2D va entonces al final del embudo (cambio = -1)."""
+    franja = ULTIMO_ANCHO[0]
+    if franja > ancho_terreno + 0.5:
+        carretera(30, ancho=franja, ancho_final=ancho_terreno, muros=4, muro_solido=True, mat=mat)
+        return franja, True
+    return max(franja, ancho_terreno), False
+
+
+def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, ancho=6.0, tubos=None,
+             resortes=(), ancho_salida=14, mat_salida="gris", enemigos=None, cambio=-12.0, cambio_ghz=False):
     """Tramo de plataformas en 2D (patrón de la sección 1, probado en el juego). Se llama al final de una carretera
     recta de al menos 20 m: el cambio a 2D va 12 m antes del final; la vuelta a 3D, 8 m dentro de la carretera de
     salida (30 m), que esta función también crea. alturas: altura de cada plataforma respecto al suelo (subidas de
@@ -883,23 +908,19 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
     Margen (0.7.3): un homing que cruza el cambio de modo se cancela, así que la primera plataforma empieza con una
     pista de MARGEN_CAMBIO_2D - 12 m sin enemigos, la última mide MARGEN - 8 m y no lleva enemigo, y la carretera de
     salida mide 8 + MARGEN m (lo que pongan las secciones encima debe ir más allá; generar.py lo comprueba).
-    ancho (0.7.16): por defecto, el de la carretera anterior; las plataformas, la carretera de salida y la franja de la
-    ruta @SV (sus dos rieles, a ±ancho/2) miden eso. Con rieles a ±1 m, Sonic entraba descentrado en carreteras de
-    14-16 m y quedaba fuera de la franja: la cámara pasaba a 2D pero se seguía moviendo en 3D (prueba de la 0.7.15;
-    en los niveles originales la separación de los rieles @SV es el ancho del terreno: 1-7,5 m en ghz200, hasta 16 en
-    sph200)."""
+    ancho: de las plataformas (6 m). La franja de la ruta @SV y el activador miden lo que la carretera anterior, con
+    un embudo 3D delante si es más ancha (embudo_2d, 0.7.17)."""
     margen = AJUSTES["MARGEN_CAMBIO_2D"]
-    if ancho is None:
-        ancho = ULTIMO_ANCHO[0]
-    if ancho_salida is None:
-        ancho_salida = ancho
+    franja, con_embudo = embudo_2d(ancho, mats[0])
+    if con_embudo:
+        cambio = -1.0
     ritmo("2d")
     if cambio_ghz:
         cambio_modo("ChangeMode_3Dto2D", cambio, ancho=10, alto=15,
                     extra="<m_IsAutoChange2DPath>true</m_IsAutoChange2DPath><m_IsPadCorrect>true</m_IsPadCorrect>"
                           "<m_PathEaseTime>1</m_PathEaseTime>", cambiar_camara=False)
     else:
-        a_2d(cambio, ancho_camino=ancho)
+        a_2d(cambio, ancho_camino=franja)
     n = len(alturas)
     entrada = max(0.0, margen + cambio)                       # pista de entrada (parte de la primera plataforma)
     largo_final = max(largo_plat + 3.0, margen - 8.0)       # última plataforma (hasta el cambio de vuelta a 3D)
@@ -908,7 +929,7 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
     largos[0] += entrada
     largos[-1] = largo_final + (entrada if n == 1 else 0.0)
     total = sum(largos) + (n - 1) * hueco
-    curva_recta(f"{nombre}@SV", cambio - 5, total + 20, rieles=(-ancho / 2, ancho / 2))
+    curva_recta(f"{nombre}@SV", cambio - 5, total + 20, rieles=(-franja / 2, franja / 2))
     camara_2d(cambio, total + 8, min(alturas) - 25, max(alturas) + 30)
     if n > 1:                                               # suelo de muerte solo entre el primer y el último hueco
         suelo_muerte(largos[0], total - largos[0] - largos[-1], profundidad=15 + max(alturas))
@@ -937,7 +958,7 @@ def tramo_2d(nombre, alturas, mats=("gris", "gris"), largo_plat=9.0, hueco=5.0, 
     extra = entrada + largo_final - (largo_plat + 3.0)      # pistas planas: se recorren corriendo
     sumar_tiempo((x - extra) / VEL["2d"] + extra / VEL["3d"], x)
     ritmo("3d")
-    a_2d(8, salida=True, ancho_camino=ancho)
+    a_2d(8, salida=True, ancho_camino=franja)
     return carretera(8 + margen, ancho=ancho_salida, mat=mat_salida)
 
 
@@ -976,7 +997,10 @@ def camara_pan(adelante, lado, arriba, distancia=6.0, fovy=45.0):
                "<VelOffsetXYZ>0</VelOffsetXYZ><ZRot>0</ZRot>", adelante, lado, arriba, q=(1.0, 0.0, 0.0, 0.0))
 
 
-def camara_loop(adelante, lado_entrada, lado_salida, arriba):
+LOOP_RADIO_REF = 15.0   # radio con el que se probaron los valores LOOP_CAMARA_* (0.7.11-0.7.15)
+
+
+def camara_loop(adelante, lado_entrada, lado_salida, arriba, radio=None, ancho=10.0):
     """Cámara de un loop como el PRIMER loop de ghz200 (0.7.11, a petición del usuario; la 0.7.10 copiaba el último):
     una ObjCameraPan (122609: CameraPositionMode 1, Distance 10, Fovy 45) en el eje, a ras de suelo y 37 m antes del
     centro de su ChangeVolumeCamera (122608: 50 m en el sentido de la marcha × 8 × 14, Priority 1, Ease 0,6), que está
@@ -985,11 +1009,27 @@ def camara_loop(adelante, lado_entrada, lado_salida, arriba):
     a = AJUSTES
     # en el eje de llegada, como en ghz200 (centrado entre entrada y salida, el volumen de 8 m dejaba fuera la entrada)
     eje = lado_entrada
-    z = arriba + a["LOOP_CAMARA_ALTO"]
-    id_pan = camara_pan(adelante - a["LOOP_CAMARA_ADELANTO"], eje, z, distancia=a["LOOP_CAMARA_DISTANCIA"],
+    if radio is None:                    # riel de la sección 4: valores tal cual
+        z = arriba + a["LOOP_CAMARA_ALTO"]
+        id_pan = camara_pan(adelante - a["LOOP_CAMARA_ADELANTO"], eje, z, distancia=a["LOOP_CAMARA_DISTANCIA"],
+                            fovy=a["LOOP_CAMARA_FOVY"])
+        volumen_camara(id_pan, adelante, eje, z, a["LOOP_CAMARA_VOL_LARGO"], a["LOOP_CAMARA_VOL_ANCHO"],
+                       a["LOOP_CAMARA_VOL_ALTO"], entrar=a["LOOP_CAMARA_EASE"], salir=a["LOOP_CAMARA_EASE"],
+                       prioridad=int(a["LOOP_CAMARA_PRIORIDAD"]))
+        return
+    # 0.7.17: con radio 30 el volumen de 14 m de alto se acababa a mitad de la subida y la cámara volvía de golpe
+    # detrás de Sonic. Cámara escalada (más lejos y más alta, se ve el loop entero) y volumen que cubre todo el loop
+    # (de −(r+10) a r+5: no toca el volumen de la cámara 2D, que empieza ~41 m después) y los dos carriles.
+    s = max(1.0, radio / LOOP_RADIO_REF)
+    z = arriba + a["LOOP_CAMARA_ALTO"] * s
+    id_pan = camara_pan(adelante - a["LOOP_CAMARA_ADELANTO"] * s, eje, z, distancia=a["LOOP_CAMARA_DISTANCIA"],
                         fovy=a["LOOP_CAMARA_FOVY"])
-    volumen_camara(id_pan, adelante, eje, z, a["LOOP_CAMARA_VOL_LARGO"], a["LOOP_CAMARA_VOL_ANCHO"],
-                   a["LOOP_CAMARA_VOL_ALTO"], entrar=a["LOOP_CAMARA_EASE"], salir=a["LOOP_CAMARA_EASE"],
+    x0, x1 = adelante - radio - 10.0, adelante + radio + 5.0
+    largo = max(a["LOOP_CAMARA_VOL_LARGO"], x1 - x0)
+    ancho_v = max(a["LOOP_CAMARA_VOL_ANCHO"], abs(lado_salida - lado_entrada) + ancho + 8.0)
+    alto_v = max(a["LOOP_CAMARA_VOL_ALTO"], 2 * radio + 8.0)
+    volumen_camara(id_pan, (x0 + x1) / 2, (lado_entrada + lado_salida) / 2, arriba + alto_v / 2 - 4.0, largo, ancho_v,
+                   alto_v, entrar=a["LOOP_CAMARA_EASE"], salir=a["LOOP_CAMARA_EASE"],
                    prioridad=int(a["LOOP_CAMARA_PRIORIDAD"]))
 
 
@@ -1031,13 +1071,14 @@ def loop(nombre, radio=10.0, ancho=10.0, desplazamiento=14.0, mat="gris"):
         rieles.append(pts)
     CURVAS.append((f"{nombre}@DP", rieles))
     # pared invisible (0.7.16) en el plano medio del loop, entre el carril de entrada y el de salida: sin ella se
-    # saltaba de uno a otro sin dar la vuelta. Por debajo de LOOP_MURO_ALTO (≤ 0,4 × radio) la pista no llega a ese
-    # plano, y cortada ahí Sonic no aterriza encima si cae desde lo alto del loop.
-    alto_muro = min(AJUSTES["LOOP_MURO_ALTO"], 0.4 * radio)
+    # saltaba de uno a otro sin dar la vuelta. 0.7.17: tope 0,85 × radio (antes 0,4; con 12 m se saltaba por encima
+    # subiendo despacio sin panel): el borde de la pista solo llega al plano medio en a ≈ 89° (z ≈ radio), y a
+    # 0,85 × radio queda a 6,7 m de lado (la pared está a d/2 = 7). 0,3 m de grosor: no se puede quedar encima.
+    alto_muro = min(AJUSTES["LOOP_MURO_ALTO"], 0.85 * radio)
     x0, x1 = -radio - 5.0, radio + 2.0
     xc, yc, zc = K.frame((x0 + x1) / 2, desplazamiento / 2, -2.0)
-    INVISIBLE.caja((xc, yc, zc), (x1 - x0, 0.5, alto_muro + 2.0), K.th, "gris")
-    camara_loop(0.0, 0.0, desplazamiento, 0.0)
+    INVISIBLE.caja((xc, yc, zc), (x1 - x0, 0.3, alto_muro + 2.0), K.th, "gris")
+    camara_loop(0.0, 0.0, desplazamiento, 0.0, radio=radio, ancho=ancho)
     cambio_modo("ChangeMode_3DtoDash", -6, ancho=ancho + 6, alto=25, extra=EXTRA_DASH)
     K.x -= desplazamiento * math.sin(K.th)
     K.y += desplazamiento * math.cos(K.th)
@@ -1121,19 +1162,20 @@ def barra_giro(adelante, arriba=3.0, largo=8.0, lado=0.0):
                "<Range>100</Range>", adelante, lado, arriba, q=q_yaw(math.pi / 2))
 
 
-def barra_2d(nombre, hueco=16.0, subida=3.0, ancho=None, mat="gris", mat_llegada=None):
+def barra_2d(nombre, hueco=16.0, subida=3.0, ancho=8.0, mat="gris", mat_llegada=None):
     """Tramo 2D con una barra de acrobacia sobre un hueco. Se llama al final de una carretera recta de al menos 20 m.
     Respeta MARGEN_CAMBIO_2D: entrada plana, hueco con el JumpPole a 3 m del borde y 2 m por encima, plataforma de
     llegada 'subida' m más alta y vuelta a 3D. Devuelve el Tramo de salida."""
     margen = AJUSTES["MARGEN_CAMBIO_2D"]
-    ancho = ancho or ULTIMO_ANCHO[0]           # 0.7.16: del ancho de la carretera anterior (franja @SV incluida)
+    franja, con_embudo = embudo_2d(ancho, mat)  # 0.7.17: franja de la carretera, terreno de 8 m y embudo delante
+    c0 = -1.0 if con_embudo else -12.0
     ritmo("2d")
-    a_2d(-12, ancho_camino=ancho)
-    entrada = max(10.0, margen - 12.0)
+    a_2d(c0, ancho_camino=franja)
+    entrada = max(10.0, margen + c0)
     llegada = max(12.0, margen - 8.0)
     total = entrada + hueco + llegada
-    curva_recta(f"{nombre}@SV", -17, total + 20, rieles=(-ancho / 2, ancho / 2))
-    camara_2d(-12, total + 8, -25, subida + 30)
+    curva_recta(f"{nombre}@SV", c0 - 5, total + 20, rieles=(-franja / 2, franja / 2))
+    camara_2d(c0, total + 8, -25, subida + 30)
     plataforma(0, 0, 0, entrada, ancho, alto=2, mat=mat)
     plataforma(entrada + hueco, 0, subida, llegada, ancho, alto=2 + subida, mat=mat_llegada or mat)
     anillos(2, entrada - 2, cada=2.0)
@@ -1143,8 +1185,8 @@ def barra_2d(nombre, hueco=16.0, subida=3.0, ancho=None, mat="gris", mat_llegada
     K.avanzar(total, subida)
     sumar_tiempo(total / VEL["2d"] + 1.0, total)
     ritmo("3d")
-    a_2d(8, salida=True, ancho_camino=ancho)
-    return carretera(8 + margen, ancho=max(14, ancho), mat=mat_llegada or mat)
+    a_2d(8, salida=True, ancho_camino=franja)
+    return carretera(8 + margen, ancho=14, mat=mat_llegada or mat)
 
 
 def panel_pared(adelante, z0, z1, ancho, mira_atras):
@@ -1180,21 +1222,22 @@ def tirolina(nombre, largo, caida, alto_cable=2.0, llegada=40, ancho=14, mat="gr
     return carretera(llegada, ancho=ancho, mat=mat)
 
 
-def pozo_pared_2d(nombre, alto=14.0, ancho=None, mat="gris", mat_panel="cpz"):
+def pozo_pared_2d(nombre, alto=14.0, ancho=8.0, mat="gris", mat_panel="cpz"):
     """Tramo 2D con un pozo de salto en pared (WallJumpBlock enfrentados, como en ssh200). Se llama al final de una
     carretera recta de al menos 20 m. Respeta MARGEN_CAMBIO_2D: entrada plana, pozo de 8 m entre una pared delantera
     (0..alto) y un bloque trasero colgado (3,5..alto+3, se entra por debajo), plataforma de arriba y vuelta a 3D a la
     altura 'alto'. Sin huecos: si se falla, se vuelve al suelo del pozo. Devuelve el Tramo de salida."""
     margen = AJUSTES["MARGEN_CAMBIO_2D"]
-    ancho = ancho or ULTIMO_ANCHO[0]           # 0.7.16: del ancho de la carretera anterior (franja @SV incluida)
+    franja, con_embudo = embudo_2d(ancho, mat)  # 0.7.17: franja de la carretera, terreno de 8 m y embudo delante
+    c0 = -1.0 if con_embudo else -12.0
     ritmo("2d")
-    a_2d(-12, ancho_camino=ancho)
-    x_pozo = max(0.0, margen - 12.0)                       # inicio del pozo (cara del bloque trasero)
+    a_2d(c0, ancho_camino=franja)
+    x_pozo = max(0.0, margen + c0)                         # inicio del pozo (cara del bloque trasero)
     x_pared = x_pozo + 8.0                                  # cara de la pared delantera
     arriba_largo = max(12.0, margen - 8.0) + 2.0           # plataforma de arriba (incluye los 2 m de la pared)
     total = x_pared + arriba_largo
-    curva_recta(f"{nombre}@SV", -17, total + 20, rieles=(-ancho / 2, ancho / 2))
-    camara_2d(-12, total + 8, -25, alto + 30)
+    curva_recta(f"{nombre}@SV", c0 - 5, total + 20, rieles=(-franja / 2, franja / 2))
+    camara_2d(c0, total + 8, -25, alto + 30)
     plataforma(0, 0, 0, x_pared, ancho, alto=2, mat=mat)                             # suelo de entrada y del pozo
     plataforma(x_pozo - 4, 0, alto + 3, 4, ancho, alto=alto - 0.5, mat=mat)          # bloque trasero (3,5 .. alto+3)
     plataforma(x_pared, 0, alto, arriba_largo, ancho, alto=alto + 2, mat=mat)       # pared delantera + plataforma de arriba
@@ -1203,16 +1246,16 @@ def pozo_pared_2d(nombre, alto=14.0, ancho=None, mat="gris", mat_panel="cpz"):
     if gimmicks_activos():
         # un panel por cara, a la medida de la cara (convención en panel_pared; en la 0.7.5 las columnas de paneles
         # pequeños dejaban sin panel la parte baja del bloque trasero y el último metro de la pared delantera)
-        panel_pared(x_pared - 0.05, 0.05, alto - 0.05, ancho, mira_atras=True)
-        panel_pared(x_pozo + 0.05, 3.55, alto + 2.95, ancho, mira_atras=False)
+        panel_pared(x_pared - 0.05, 0.05, alto - 0.05, 3.0, mira_atras=True)
+        panel_pared(x_pozo + 0.05, 3.55, alto + 2.95, 3.0, mira_atras=False)
     else:
         for x, z0, z1 in ((x_pared - 0.06, 0.5, alto - 0.3), (x_pozo + 0.06, 3.8, alto + 2.7)):
-            visual(x, 0, z0, (0.1, ancho, z1 - z0), mat_panel)                         # placas de color en las caras
+            visual(x, 0, z0, (0.1, 3.0, z1 - z0), mat_panel)                         # placas de color en las caras
     K.avanzar(total, alto)
     sumar_tiempo(total / VEL["2d"] + 4.0, total)          # ~4 s de saltos en el pozo
     ritmo("3d")
-    a_2d(8, salida=True, ancho_camino=ancho)
-    return carretera(8 + margen, ancho=max(14, ancho), mat=mat)
+    a_2d(8, salida=True, ancho_camino=franja)
+    return carretera(8 + margen, ancho=14, mat=mat)
 
 
 # ----------------------------------------------------------------------------------------------
