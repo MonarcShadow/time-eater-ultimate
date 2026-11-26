@@ -73,19 +73,51 @@ def construir():
     # acaba en lo alto, 1 m más abajo, antes del aro. El paso sale del giro máximo: la curvatura de una hélice es
     # R / (R² + c²), con c = paso / 2π, y entre dos anillos (a LIGHT_DASH_SEPARACION) gira curvatura × separación;
     # se deja un 15 % de margen bajo LIGHT_DASH_GIRO_MAX. Si no caben 2 vueltas, el hueco se alarga.
+    # 0.8.1: la hélice acababa con ~35° de tangente lateral y Sonic salía disparado al vacío, no al aro. Ahora el eje de
+    # la espiral (la línea por lo alto de las vueltas) apunta al centro del aro, el radio se cierra con un smoothstep en
+    # el último tramo y los últimos anillos van rectos sobre ese eje. Si algún giro pasa del 85 % de GIRO_MAX se alarga
+    # el cierre y, si no basta, el paso.
     R = AJUSTES["LIGHT_DASH_ESPIRAL_RADIO"]
-    k_max = math.radians(0.85 * AJUSTES["LIGHT_DASH_GIRO_MAX"]) / AJUSTES["LIGHT_DASH_SEPARACION"]
+    sep = AJUSTES["LIGHT_DASH_SEPARACION"]
+    limite = 0.85 * AJUSTES["LIGHT_DASH_GIRO_MAX"]
+    k_max = math.radians(limite) / sep
     paso_min = 2 * math.pi * math.sqrt(max(0.0, R / k_max - R * R))
-    if HUECO - 2.0 - x3 < 2 * paso_min:
-        HUECO = x3 + 2.0 + 2 * paso_min
-    largo_fila = HUECO - 2.0 - x3
-    vueltas = max(2, int(largo_fila / paso_min)) if paso_min > 0 else 2
-    n_ctl = max(8, int(largo_fila / 2.0))
-    def helice(u):
-        fase = 2 * math.pi * vueltas * u
-        return (x3 + largo_fila * u, R * math.sin(fase), 14.0 - u - R + R * math.cos(fase))
-    fila_light_dash([helice(k / n_ctl) for k in range(n_ctl + 1)],
-                    fantasmas=(helice(-1 / n_ctl), helice(1 + 1 / n_ctl)))
+    RECTA = 3.0 * sep                                       # los últimos anillos, rectos hacia el aro
+    if HUECO - 2.0 - x3 < 2 * paso_min + RECTA:
+        HUECO = x3 + 2.0 + 2 * paso_min + RECTA
+    xa, za = HUECO - 0.5, 12.0                              # centro del aro de impulso
+    xf = HUECO - 2.0                                        # último anillo
+    xe = xf - RECTA                                         # fin de la hélice (radio 0)
+
+    def eje(x):
+        return 14.0 + (za - 14.0) * (x - x3) / (xa - x3)
+
+    def suave(t):
+        t = max(0.0, min(1.0, t))
+        return t * t * (3 - 2 * t)
+
+    largo_cierre, paso = paso_min, paso_min
+    for _ in range(30):
+        vueltas = max(1, int((xe - x3) / paso))
+        paso_real = (xe - x3) / vueltas
+        largo_cierre = min(largo_cierre, xe - x3)
+
+        def espiral(x):
+            e = 1.0 - suave((x - (xe - largo_cierre)) / largo_cierre)
+            fase = 2 * math.pi * (x - x3) / paso_real
+            return (x, R * e * math.sin(fase), eje(x) - R * e * (1 - math.cos(fase)))
+        n_ctl = max(8, int((xe - x3) / 2.0))
+        control = [espiral(x3 + (xe - x3) * k / n_ctl) for k in range(n_ctl + 1)]
+        control += [(x, 0.0, eje(x)) for x in (xe + RECTA / 2, xf)]
+        fantasmas = (espiral(x3 - (xe - x3) / n_ctl), (xf + RECTA / 2, 0.0, eje(xf + RECTA / 2)))
+        _, giro = puntos_light_dash(control, fantasmas)
+        if giro <= limite:
+            break
+        if largo_cierre < xe - x3 - 1e-6:
+            largo_cierre *= 1.25
+        else:
+            paso *= 1.1
+    fila_light_dash(control, fantasmas)
     aro_impulso_inclinado(HUECO - 0.5, 0, 12.0, velocidad=30, bajada_grados=40)
     suelo_muerte(0, HUECO, ancho=40, profundidad=18)
     K.avanzar(HUECO, SUBIDA)

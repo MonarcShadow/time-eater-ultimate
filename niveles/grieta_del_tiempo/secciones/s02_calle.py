@@ -28,7 +28,7 @@ def construir():
     with en(t, 186):
         dash_panel(0)
     with en(t, 197):
-        rampa_salto(0, boost=71.4, normal=65.1, angulo=1)        # hueco de 22 m: con 68/62 se llegaba justo al borde (+5 %, 0.7.17)
+        rampa_salto(0, boost=65.1, normal=65.1, angulo=1)        # hueco de 22 m: 68/62 llegaba justo al borde; 0.8.1: con boost igual que sin boost
     # islas de asfalto sobre las nubes (huecos entre islas)
     suelo_muerte(0, 120, ancho=40, profundidad=25)
     K.avanzar(22)

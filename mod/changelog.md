@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.1
+Grieta del Tiempo:
+- **Loop automático (sección 1):** como los de City Escape, al entrar Sonic va a velocidad fija toda la vuelta (`LOOP_AUTORUN_VELOCIDAD`, 60). Antes, sin boost, frenaba en lo más alto.
+- **Cámara del loop:** ahora va al costado y se ve el loop entero con Sonic siempre a la vista. Antes, en la bajada, la pista lo tapaba. Con `LOOP_CAMARA_LATERAL = 0` vuelve la cámara frontal.
+- **Sección 2:** la rampa lanza igual con boost que sin boost (65,1).
+- **Desafío aéreo (sección 9):** la espiral se cierra al final y los últimos anillos van rectos apuntando al aro de impulso, sin pasar de 6° de giro entre anillos. Antes, Sonic salía de lado hacia el vacío.
+
 ## 0.8.0
 Grieta del Tiempo:
 - **Texturas originales:** cada zona usa texturas de su propio escenario.

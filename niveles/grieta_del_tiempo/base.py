@@ -49,6 +49,8 @@ AJUSTES_POR_DEFECTO = {
     "LOOP_CAMARA_VOL_ALTO": 14.0,
     "LOOP_CAMARA_PRIORIDAD": 1.0,
     "LOOP_CAMARA_EASE": 0.6,
+    "LOOP_CAMARA_LATERAL": 1.0,    # 1: cámara al costado del loop (0.8.1); 0: frontal escalada (0.7.17)
+    "LOOP_AUTORUN_VELOCIDAD": 60.0,  # m/s forzados por el AutorunStartCollision del loop (0.8.1)
     "RIEL_SECRETO_ANGULO": 20.0,   # grados a la izquierda del frente donde empieza el riel secreto (0.7.10: 45)
     "RIEL_SECRETO_ALTO": 14.0,     # m sobre la explanada del inicio del riel secreto (0.7.10: 9,5)
     "RIEL_CAMARA_PITCH": 85.0,     # grados: cámara cenital del riel secreto (euc200 usa 85-89 en el riel de la torre)
@@ -733,7 +735,8 @@ def anillos(desde, hasta, cada=2.5, lado=0.0, arriba=0.8, tramo=None, dash=False
         d += cada
 
 
-def fila_light_dash(control, fantasmas=None):
+def puntos_light_dash(control, fantasmas=None):
+    """Puntos de una fila de light dash (ver fila_light_dash) y su giro máximo en grados, sin crear objetos (0.8.1)."""
     """Fila curva de anillos de light dash (0.7.10), con las medidas de Planet Wisp (pla204): 'control' son puntos
     (adelante, lado, arriba) del cursor; se interpola una curva Catmull-Rom y se remuestrea a LIGHT_DASH_SEPARACION.
     Avisa si dos anillos seguidos giran más de LIGHT_DASH_GIRO_MAX (con giros mayores Sonic sale recto).
@@ -770,6 +773,12 @@ def fila_light_dash(control, fantasmas=None):
         v = [c[j] - b[j] for j in range(3)]
         cos = sum(x * y for x, y in zip(u, v)) / max(1e-9, math.hypot(*u) * math.hypot(*v))
         giro_max = max(giro_max, math.degrees(math.acos(max(-1.0, min(1.0, cos)))))
+    return puntos, giro_max
+
+
+def fila_light_dash(control, fantasmas=None):
+    """Fila curva de anillos de light dash (0.7.10): ver puntos_light_dash."""
+    puntos, giro_max = puntos_light_dash(control, fantasmas)
     if giro_max > AJUSTES["LIGHT_DASH_GIRO_MAX"]:
         print(f"TEU_AVISO light dash ({seccion_actual()}): giro de {giro_max:.1f}° entre anillos (máx. {AJUSTES['LIGHT_DASH_GIRO_MAX']:g})")
     for p in puntos:
@@ -801,7 +810,7 @@ def resorte_vertical(adelante, lado=0.0, arriba=0.0, velocidad=30, a_3d=False, m
 def rampa_salto(adelante, lado=0.0, boost=50, normal=35, angulo=0):
     """JumpBoard. angulo = AngleType del juego: 0 = rampa tendida, 1 = rampa empinada.
     Calibrado en el juego: hueco de 28 m -> 60/60 ángulo 0; hueco de 22 m (a una isla) -> 68/62 ángulo 1 llegaba justo
-    al borde, 71,4/65,1 desde la 0.7.17."""
+    al borde, 71,4/65,1 en la 0.7.17; 0.8.1: 65,1/65,1 (con boost se pasaba)."""
     obj("JumpBoard", f"<AngleType>{angulo}</AngleType><GroundOffset>0</GroundOffset>"
         f"<ImpulseSpeedOnBoost>{boost}</ImpulseSpeedOnBoost><ImpulseSpeedOnNormal>{normal}</ImpulseSpeedOnNormal>"
         "<IsCastShadow>false</IsCastShadow><IsTo3D>false</IsTo3D><LookBack>false</LookBack><OutOfControl>1.5</OutOfControl>"
@@ -1136,9 +1145,17 @@ def camara_loop(adelante, lado_entrada, lado_salida, arriba, radio=None, ancho=1
     # detrás de Sonic. Cámara escalada (más lejos y más alta, se ve el loop entero) y volumen que cubre todo el loop
     # (de −(r+10) a r+5: no toca el volumen de la cámara 2D, que empieza ~41 m después) y los dos carriles.
     s = max(1.0, radio / LOOP_RADIO_REF)
-    z = arriba + a["LOOP_CAMARA_ALTO"] * s
-    id_pan = camara_pan(adelante - a["LOOP_CAMARA_ADELANTO"] * s, eje, z, distancia=a["LOOP_CAMARA_DISTANCIA"],
-                        fovy=a["LOOP_CAMARA_FOVY"])
+    if a["LOOP_CAMARA_LATERAL"] >= 0.5:
+        # 0.8.1: desde delante, en la bajada se veía el dorso de la pista y Sonic quedaba tapado. Al costado (lado de la
+        # entrada), a la altura del centro y a la distancia en que el loop entero cabe en el campo de visión.
+        d = (radio + 8.0) / math.tan(math.radians(a["LOOP_CAMARA_FOVY"]) / 2)
+        lado_cam = lado_entrada - d if lado_salida >= lado_entrada else lado_entrada + d
+        id_pan = camara_pan(adelante, lado_cam, arriba + radio, distancia=a["LOOP_CAMARA_DISTANCIA"],
+                            fovy=a["LOOP_CAMARA_FOVY"])
+    else:
+        z = arriba + a["LOOP_CAMARA_ALTO"] * s
+        id_pan = camara_pan(adelante - a["LOOP_CAMARA_ADELANTO"] * s, eje, z, distancia=a["LOOP_CAMARA_DISTANCIA"],
+                            fovy=a["LOOP_CAMARA_FOVY"])
     x0, x1 = adelante - radio - 10.0, adelante + radio + 5.0
     largo = max(a["LOOP_CAMARA_VOL_LARGO"], x1 - x0)
     ancho_v = max(a["LOOP_CAMARA_VOL_ANCHO"], abs(lado_salida - lado_entrada) + ancho + 8.0)
@@ -1195,6 +1212,16 @@ def loop(nombre, radio=10.0, ancho=10.0, desplazamiento=14.0, mat="gris"):
     INVISIBLE.caja((xc, yc, zc), (x1 - x0, 0.3, alto_muro + 2.0), K.th, "gris")
     camara_loop(0.0, 0.0, desplazamiento, 0.0, radio=radio, ancho=ancho)
     cambio_modo("ChangeMode_3DtoDash", -6, ancho=ancho + 6, alto=25, extra=EXTRA_DASH)
+    # 0.8.1: loop automático, como los de City Escape (AutorunStartCollision/FinishCollision de cte200): sin boost Sonic
+    # frenaba arriba. Velocidad forzada durante toda la vuelta, siguiendo la spline @DP.
+    vel = AJUSTES["LOOP_AUTORUN_VELOCIDAD"]
+    obj("AutorunStartCollision", f"<Collision_Height>25</Collision_Height><Collision_Width>{ancho + 6:g}</Collision_Width>"
+        "<EaseTime>1</EaseTime><GroundOffset>0</GroundOffset><IsCastShadow>false</IsCastShadow>"
+        f"<IsForceToGround>false</IsForceToGround><KeepTime>{2 * math.pi * radio / vel + 1.5:.2f}</KeepTime><Range>100</Range>"
+        f"<Speed>{vel:g}</Speed><ToPathEaseTime>0.4</ToPathEaseTime><Type>0</Type>", -5.0, 0.0, 0.0, q=q_yaw())
+    obj("AutorunFinishCollision", f"<Collision_Height>25</Collision_Height><Collision_Width>{ancho + 6:g}</Collision_Width>"
+        "<GroundOffset>0</GroundOffset><IsCastShadow>false</IsCastShadow><Range>100</Range>",
+        7.0, desplazamiento, 0.0, q=q_yaw())
     K.x -= desplazamiento * math.sin(K.th)
     K.y += desplazamiento * math.cos(K.th)
     registrar_eje(0.0)
